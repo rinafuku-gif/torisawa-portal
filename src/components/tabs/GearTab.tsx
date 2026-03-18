@@ -249,6 +249,17 @@ function GearRow({
           {item.quantity > 1 && `¥${item.price.toLocaleString()} × ${item.quantity}`}
         </div>
       </div>
+      {item.shopUrl && (
+        <a
+          href={item.shopUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded-lg hover:bg-orange-50 transition-all shrink-0"
+          title="購入リンク"
+        >
+          🛒
+        </a>
+      )}
       <button
         onClick={onEdit}
         className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all shrink-0"
@@ -280,6 +291,7 @@ function EditGearRow({
   const [priority, setPriority] = useState(item.priority);
   const [category, setCategory] = useState(item.category);
   const [note, setNote] = useState(item.note);
+  const [shopUrl, setShopUrl] = useState(item.shopUrl || "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
@@ -314,6 +326,10 @@ function EditGearRow({
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="備考"
             className="w-full px-3 py-1.5 border border-stone-200 rounded-lg text-sm" />
         </div>
+        <div className="md:col-span-2">
+          <input value={shopUrl} onChange={(e) => setShopUrl(e.target.value)} placeholder="購入リンク（URL）"
+            className="w-full px-3 py-1.5 border border-stone-200 rounded-lg text-sm" />
+        </div>
       </div>
       <div className="flex justify-between mt-3">
         <div>
@@ -330,7 +346,7 @@ function EditGearRow({
         <div className="flex gap-2">
           <button onClick={onCancel} className="text-xs px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-lg">キャンセル</button>
           <button
-            onClick={() => onSave({ name, product, price: Number(price), quantity: Number(quantity), status, priority, category, note })}
+            onClick={() => onSave({ name, product, price: Number(price), quantity: Number(quantity), status, priority, category, note, shopUrl: shopUrl || undefined })}
             className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium"
           >保存</button>
         </div>
