@@ -34,7 +34,7 @@ export function OverviewTab() {
           {user.avatar} {user.name}さん
         </h2>
         <p className="text-stone-600 mt-1 text-sm">
-          目標オープン: 2026年5月 | コンセプト: 街と山を繋ぐ、泊まれる道具箱
+          オープン日: 2026年4月28日 | コンセプト: 街と山を繋ぐ、泊まれる道具箱
         </p>
       </div>
 
