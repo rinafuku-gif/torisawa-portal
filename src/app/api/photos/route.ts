@@ -18,9 +18,17 @@ async function getPhotosMeta(): Promise<SitePhoto[]> {
 }
 
 async function savePhotosMeta(photos: SitePhoto[]) {
+  // Delete old meta blob first
+  try {
+    const { blobs } = await list({ prefix: META_PREFIX });
+    if (blobs.length > 0) {
+      await del(blobs.map((b) => b.url));
+    }
+  } catch {
+    // ok
+  }
   await put(META_PREFIX, JSON.stringify(photos), {
     access: "public",
-    addRandomSuffix: false,
   });
 }
 

@@ -21,12 +21,25 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const items: GearItem[] = await request.json();
+
+    // Delete existing blob first, then create new one
+    try {
+      const { blobs } = await list({ prefix: BLOB_PREFIX });
+      if (blobs.length > 0) {
+        const { del } = await import("@vercel/blob");
+        await del(blobs.map((b) => b.url));
+      }
+    } catch {
+      // ok if delete fails
+    }
+
     const blob = await put(BLOB_PREFIX, JSON.stringify(items), {
       access: "public",
-      addRandomSuffix: false,
     });
     return NextResponse.json({ ok: true, url: blob.url });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Gear PUT error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
