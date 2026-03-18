@@ -133,7 +133,7 @@ export async function createTask(task: Omit<Task, "id">): Promise<Task> {
   }
 
   const page = await notion.pages.create({
-    parent: { database_id: TASKS_DB },
+    parent: { data_source_id: TASKS_DB },
     properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
   });
 
@@ -264,7 +264,7 @@ export async function createGearItem(item: Omit<GearItem, "id">): Promise<GearIt
   }
 
   const page = await notion.pages.create({
-    parent: { database_id: GEAR_DB },
+    parent: { data_source_id: GEAR_DB },
     properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
   });
 
