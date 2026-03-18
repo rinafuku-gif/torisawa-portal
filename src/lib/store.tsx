@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   useCallback,
   useMemo,
   type ReactNode,
@@ -29,20 +30,17 @@ type Store = StoreState & StoreActions;
 
 const STORAGE_KEY = "torisawa-portal-data-v3";
 const DATA_VERSION_KEY = "torisawa-data-version";
-// Bump this number whenever defaultTasks in data.ts changes significantly
 const CURRENT_DATA_VERSION = 3;
 
 function loadFromStorage(): Task[] | null {
   if (typeof window === "undefined") return null;
   try {
     const storedVersion = Number(localStorage.getItem(DATA_VERSION_KEY) || "0");
-    // Old version → discard and use fresh defaults (one-time reset)
     if (storedVersion < CURRENT_DATA_VERSION) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
       return null;
     }
-    // Same version → load saved data
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -78,7 +76,6 @@ function recalcParents(tasks: Task[]): Task[] {
     const children = tasks.filter((c) => c.parentId === t.id);
     if (children.length === 0) return t;
     const derivedStatus = deriveParentStatus(children);
-    // Derive date range from children
     const childStarts = children.map((c) => c.startDate).filter(Boolean) as string[];
     const childEnds = children.map((c) => c.dueDate).filter(Boolean) as string[];
     const derivedStart = childStarts.length > 0 ? childStarts.sort()[0] : t.startDate;
@@ -91,66 +88,55 @@ function recalcParents(tasks: Task[]): Task[] {
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
-
-  useEffect(() => {
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    // Initialize from localStorage synchronously to avoid flash of default data
+    if (typeof window === "undefined") return defaultTasks;
     const stored = loadFromStorage();
-    if (stored) {
-      setTasks(recalcParents(stored));
-    }
-  }, []);
+    return stored ? recalcParents(stored) : recalcParents([...defaultTasks]);
+  });
+  const initialized = useRef(false);
 
-  const persist = useCallback((ts: Task[]) => {
-    saveToStorage(ts);
-  }, []);
+  // Auto-save to localStorage whenever tasks change (after initial load)
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
+    }
+    saveToStorage(tasks);
+  }, [tasks]);
 
   const addTask = useCallback(
     (task: Omit<Task, "id">) => {
       const id = `t_${Date.now()}`;
-      setTasks((prev) => {
-        const next = recalcParents([...prev, { ...task, id }]);
-        persist(next);
-        return next;
-      });
+      setTasks((prev) => recalcParents([...prev, { ...task, id }]));
     },
-    [persist]
+    []
   );
 
   const updateTask = useCallback(
     (id: string, updates: Partial<Task>) => {
-      setTasks((prev) => {
-        const next = recalcParents(
-          prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-        );
-        persist(next);
-        return next;
-      });
+      setTasks((prev) =>
+        recalcParents(prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
+      );
     },
-    [persist]
+    []
   );
 
   const deleteTask = useCallback(
     (id: string) => {
       setTasks((prev) => {
-        // Also delete children if deleting a parent
         const childIds = new Set(prev.filter((t) => t.parentId === id).map((t) => t.id));
-        const next = recalcParents(
-          prev.filter((t) => t.id !== id && !childIds.has(t.id))
-        );
-        persist(next);
-        return next;
+        return recalcParents(prev.filter((t) => t.id !== id && !childIds.has(t.id)));
       });
     },
-    [persist]
+    []
   );
 
   const toggleTaskStatus = useCallback(
     (id: string) => {
       setTasks((prev) => {
         const target = prev.find((t) => t.id === id);
-        if (!target) return prev;
-        // Don't toggle parent tasks directly - they are derived
-        if (!target.parentId) return prev;
+        if (!target || !target.parentId) return prev;
         const nextStatus: Task["status"] =
           target.status === "done"
             ? "todo"
@@ -159,14 +145,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : target.status === "in-progress"
             ? "done"
             : "todo";
-        const next = recalcParents(
+        return recalcParents(
           prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
         );
-        persist(next);
-        return next;
       });
     },
-    [persist]
+    []
   );
 
   const getChildTasks = useCallback(
@@ -180,10 +164,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const resetData = useCallback(() => {
-    const fresh = recalcParents([...defaultTasks]);
-    setTasks(fresh);
-    persist(fresh);
-  }, [persist]);
+    setTasks(recalcParents([...defaultTasks]));
+  }, []);
 
   const store: Store = useMemo(
     () => ({
