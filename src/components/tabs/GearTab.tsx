@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import {
   type GearItem,
+  type GearComment,
   type GearStatus,
   type GearPriority,
   gearStatuses,
@@ -105,25 +106,29 @@ export function GearTab() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="bg-purple-50 rounded-xl border border-purple-200 p-3 text-center">
+          <div className="text-2xl font-bold text-stone-800">{items.filter((i) => i.status === "選定中").length}</div>
+          <div className="text-xs text-purple-700">選定中</div>
+        </div>
         <div className="bg-stone-50 rounded-xl border border-stone-200 p-3 text-center">
-          <div className="text-2xl font-bold text-stone-800">{items.length}</div>
-          <div className="text-xs text-stone-500">全アイテム</div>
+          <div className="text-2xl font-bold text-stone-800">{pendingCount}</div>
+          <div className="text-xs text-stone-600">未発注</div>
         </div>
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-3 text-center">
           <div className="text-2xl font-bold text-stone-800">{orderedCount}</div>
           <div className="text-xs text-amber-700">発注済</div>
         </div>
-        <div className="bg-rose-50 rounded-xl border border-rose-200 p-3 text-center">
-          <div className="text-2xl font-bold text-stone-800">{pendingCount}</div>
-          <div className="text-xs text-rose-600">未発注</div>
+        <div className="bg-sky-50 rounded-xl border border-sky-200 p-3 text-center">
+          <div className="text-2xl font-bold text-stone-800">{items.filter((i) => i.status === "到着済").length}</div>
+          <div className="text-xs text-sky-700">到着済</div>
         </div>
         <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-3 text-center">
           <div className="text-lg font-bold text-stone-800">
             ¥{arrivedCost.toLocaleString()}
           </div>
           <div className="text-xs text-emerald-700">
-            到着済 / ¥{totalCost.toLocaleString()}
+            確保済 / ¥{totalCost.toLocaleString()}
           </div>
         </div>
       </div>
@@ -194,8 +199,13 @@ export function GearTab() {
                       <GearRow
                         key={item.id}
                         item={item}
+                        userName={user.name}
                         onStatusChange={(s) => updateItem(item.id, { status: s })}
                         onEdit={() => setEditingId(item.id)}
+                        onAddComment={(text) => {
+                          const comment: GearComment = { id: `c_${Date.now()}`, text, by: user.name, at: new Date().toISOString() };
+                          updateItem(item.id, { comments: [...(item.comments || []), comment] });
+                        }}
                       />
                     )
                   )}
@@ -210,62 +220,127 @@ export function GearTab() {
 
 function GearRow({
   item,
+  userName,
   onStatusChange,
   onEdit,
+  onAddComment,
 }: {
   item: GearItem;
+  userName: string;
   onStatusChange: (s: GearStatus) => void;
   onEdit: () => void;
+  onAddComment: (text: string) => void;
 }) {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
   const statusIdx = gearStatuses.findIndex((s) => s.value === item.status);
   const statusStyle = gearStatuses[statusIdx];
+  const isSelecting = item.status === "選定中";
+  const comments = item.comments || [];
 
   function cycleStatus() {
     const nextIdx = (statusIdx + 1) % gearStatuses.length;
     onStatusChange(gearStatuses[nextIdx].value);
   }
 
+  function handleAddComment() {
+    if (!commentText.trim()) return;
+    onAddComment(commentText.trim());
+    setCommentText("");
+  }
+
   return (
-    <div className="px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group">
-      <button
-        onClick={cycleStatus}
-        className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all hover:ring-2 hover:ring-orange-300 ${statusStyle.color}`}
-        title="クリックでステータス変更"
-      >
-        {statusStyle.label}
-      </button>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-stone-800">{item.name}</div>
-        <div className="text-xs text-stone-500 mt-0.5">
-          {item.product}
-          {item.note && <span className="ml-2 text-stone-400">({item.note})</span>}
-        </div>
-      </div>
-      <div className="text-right shrink-0 hidden sm:block">
-        <div className="text-sm font-medium text-stone-700">
-          ¥{(item.price * item.quantity).toLocaleString()}
-        </div>
-        <div className="text-xs text-stone-400">
-          {item.quantity > 1 && `¥${item.price.toLocaleString()} × ${item.quantity}`}
-        </div>
-      </div>
-      {item.shopUrl && (
-        <a
-          href={item.shopUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded-lg hover:bg-orange-50 transition-all shrink-0"
-          title="購入リンク"
+    <div>
+      <div className={`px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group ${isSelecting ? "bg-purple-50/50" : ""}`}>
+        <button
+          onClick={cycleStatus}
+          className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all hover:ring-2 hover:ring-orange-300 ${statusStyle.color}`}
+          title="クリックでステータス変更"
         >
-          🛒
-        </a>
+          {statusStyle.label}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-medium ${isSelecting ? "text-purple-800" : "text-stone-800"}`}>{item.name}</span>
+            {isSelecting && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 text-purple-700 font-medium">稲福が選定中 - 発注不可</span>
+            )}
+          </div>
+          <div className="text-xs text-stone-500 mt-0.5">
+            {item.product}
+            {item.note && <span className="ml-2 text-stone-400">({item.note})</span>}
+          </div>
+        </div>
+        <div className="text-right shrink-0 hidden sm:block">
+          <div className="text-sm font-medium text-stone-700">
+            ¥{(item.price * item.quantity).toLocaleString()}
+          </div>
+          <div className="text-xs text-stone-400">
+            {item.quantity > 1 && `¥${item.price.toLocaleString()} × ${item.quantity}`}
+          </div>
+        </div>
+        {item.shopUrl && !isSelecting && (
+          <a
+            href={item.shopUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded-lg hover:bg-orange-50 transition-all shrink-0"
+            title="購入リンク"
+          >
+            🛒
+          </a>
+        )}
+        {item.shopUrl && isSelecting && (
+          <span className="text-xs text-stone-300 px-2 py-1 shrink-0 cursor-not-allowed" title="選定中のため発注できません">🛒</span>
+        )}
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className={`text-xs px-2 py-1 rounded-lg transition-all shrink-0 ${
+            comments.length > 0
+              ? "text-orange-500 hover:text-orange-700 hover:bg-orange-50"
+              : "opacity-0 group-hover:opacity-100 text-stone-400 hover:text-stone-600 hover:bg-stone-100"
+          }`}
+        >
+          💬{comments.length > 0 && ` ${comments.length}`}
+        </button>
+        <button
+          onClick={onEdit}
+          className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all shrink-0"
+        >
+          編集
+        </button>
+      </div>
+      {/* Comments */}
+      {showComments && (
+        <div className="px-5 pb-3 bg-stone-50 border-t border-stone-100">
+          {comments.length > 0 && (
+            <div className="space-y-1.5 pt-2 pb-2">
+              {comments.map((c) => (
+                <div key={c.id} className="text-xs">
+                  <span className="font-medium text-stone-700">{c.by}</span>
+                  <span className="text-stone-400 ml-1.5">{new Date(c.at).toLocaleDateString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                  <p className="text-stone-600 mt-0.5">{c.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAddComment(); }}
+              placeholder="コメントを入力..."
+              className="flex-1 px-3 py-1.5 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-orange-400"
+            />
+            <button
+              onClick={handleAddComment}
+              className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium shrink-0"
+            >
+              送信
+            </button>
+          </div>
+        </div>
       )}
-      <button
-        onClick={onEdit}
-        className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all shrink-0"
-      >
-        編集
-      </button>
     </div>
   );
 }

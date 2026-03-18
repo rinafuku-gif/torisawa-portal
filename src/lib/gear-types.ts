@@ -1,5 +1,12 @@
-export type GearStatus = "未発注" | "発注済" | "到着済" | "設置済";
+export type GearStatus = "選定中" | "未発注" | "発注済" | "到着済" | "設置済";
 export type GearPriority = "必須" | "推奨" | "あれば◎" | "検討中";
+
+export interface GearComment {
+  id: string;
+  text: string;
+  by: string;
+  at: string;
+}
 
 export interface GearItem {
   id: string;
@@ -12,6 +19,7 @@ export interface GearItem {
   priority: GearPriority;
   note: string;
   shopUrl?: string;
+  comments?: GearComment[];
 }
 
 export interface SitePhoto {
@@ -24,6 +32,7 @@ export interface SitePhoto {
 }
 
 export const gearStatuses: { value: GearStatus; label: string; color: string }[] = [
+  { value: "選定中", label: "選定中", color: "bg-purple-100 text-purple-700" },
   { value: "未発注", label: "未発注", color: "bg-stone-100 text-stone-600" },
   { value: "発注済", label: "発注済", color: "bg-amber-100 text-amber-700" },
   { value: "到着済", label: "到着済", color: "bg-sky-100 text-sky-700" },
@@ -84,7 +93,7 @@ export const defaultGearItems: GearItem[] = [
   { id: "g45", category: "DIY・内装", name: "照明器具", product: "ライティングレール＋スポット", price: 80000, quantity: 1, status: "未発注", priority: "必須", note: "電気工事込" },
   { id: "g46", category: "DIY・内装", name: "塗装・補修材", product: "ワトコオイル ナチュラル", price: 20000, quantity: 1, status: "未発注", priority: "推奨", note: "柱・棚の着色", shopUrl: "https://www.amazon.co.jp/dp/B00GWBQSW0" },
   { id: "g47", category: "DIY・内装", name: "棚・木材", product: "2×4材・集成材", price: 25000, quantity: 1, status: "未発注", priority: "推奨", note: "キッチン・洗面所" },
-  { id: "g48", category: "DIY・内装", name: "カーテン・ラグ", product: "ニトリ 防炎1級遮光 100x210cm", price: 15000, quantity: 3, status: "未発注", priority: "必須", note: "簡易宿所は防炎カーテンが法的に必須", shopUrl: "https://www.amazon.co.jp/dp/B0CHM664FT" },
+  { id: "g48", category: "DIY・内装", name: "防炎カーテン", product: "ニトリ 防炎1級遮光 100x210cm", price: 15000, quantity: 3, status: "設置済", priority: "必須", note: "購入・設置完了", shopUrl: "https://www.amazon.co.jp/dp/B0CHM664FT" },
   // E. 備品
   { id: "g49", category: "備品", name: "アメニティボトル", product: "ディスペンサー3本セット 1000ml", price: 5000, quantity: 1, status: "未発注", priority: "必須", note: "", shopUrl: "https://www.amazon.co.jp/dp/B09J8FFY8G" },
   { id: "g50", category: "備品", name: "キッチンツール一式", product: "調理器具10点セット KC-10", price: 15000, quantity: 1, status: "未発注", priority: "必須", note: "", shopUrl: "https://www.amazon.co.jp/dp/B0FT7RZS7Y" },
