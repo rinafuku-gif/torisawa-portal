@@ -25,7 +25,7 @@ export function RevenueTab() {
           <div className="text-xs text-sky-600 mt-1">これを超えれば勝ち</div>
         </div>
         <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5">
-          <div className="text-sm text-amber-700 font-medium">Ryo年間収入</div>
+          <div className="text-sm text-amber-700 font-medium">稲福年間収入</div>
           <div className="text-2xl font-bold text-stone-800 mt-1">¥84〜101万</div>
           <div className="text-xs text-amber-600 mt-1">標準〜楽観シナリオ</div>
         </div>
@@ -80,7 +80,7 @@ export function RevenueTab() {
                 <th className="text-left px-3 py-2 font-medium text-stone-700">泊数</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">合計売上</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">オーナー</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-700">Ryo</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-700">稲福</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">vs 賃貸</th>
               </tr>
             </thead>

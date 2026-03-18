@@ -166,21 +166,21 @@ export function OverviewTab() {
               <span className="text-sm text-stone-600">宿泊料金</span>
               <div className="flex gap-3 text-sm">
                 <span className="text-stone-800 font-medium">オーナー 65%</span>
-                <span className="text-orange-600 font-medium">Ryo 35%</span>
+                <span className="text-orange-600 font-medium">稲福 35%</span>
               </div>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
               <span className="text-sm text-stone-600">ギアレンタル</span>
               <div className="flex gap-3 text-sm">
                 <span className="text-stone-800 font-medium">オーナー 65%</span>
-                <span className="text-orange-600 font-medium">Ryo 35%</span>
+                <span className="text-orange-600 font-medium">稲福 35%</span>
               </div>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
               <span className="text-sm text-stone-600">体験プログラム</span>
               <div className="flex gap-3 text-sm">
                 <span className="text-stone-800 font-medium">オーナー 85%</span>
-                <span className="text-orange-600 font-medium">Ryo 15%</span>
+                <span className="text-orange-600 font-medium">稲福 15%</span>
               </div>
             </div>
           </div>
