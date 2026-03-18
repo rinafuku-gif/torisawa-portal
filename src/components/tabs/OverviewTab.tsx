@@ -10,17 +10,19 @@ export function OverviewTab() {
 
   if (!user) return null;
 
-  const todoCount = store.tasks.filter((t) => t.status === "todo").length;
-  const inProgressCount = store.tasks.filter((t) => t.status === "in-progress").length;
-  const doneCount = store.tasks.filter((t) => t.status === "done").length;
-  const totalTasks = store.tasks.length;
+  // Only count child tasks (leaf tasks) for stats
+  const childTasks = store.tasks.filter((t) => t.parentId);
+  const todoCount = childTasks.filter((t) => t.status === "todo").length;
+  const inProgressCount = childTasks.filter((t) => t.status === "in-progress").length;
+  const doneCount = childTasks.filter((t) => t.status === "done").length;
+  const totalTasks = childTasks.length;
   const progressPercent = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
 
-  const nextMilestones = store.milestones
-    .filter((m) => m.status !== "done")
-    .slice(0, 4);
+  // Show parent tasks as milestones with progress
+  const parentTasks = store.getParentTasks();
+  const nextPhases = parentTasks.filter((p) => p.status !== "done").slice(0, 4);
 
-  const urgentTasks = store.tasks
+  const urgentTasks = childTasks
     .filter((t) => t.priority === "high" && t.status !== "done")
     .slice(0, 5);
 
@@ -104,8 +106,7 @@ export function OverviewTab() {
                       {t.title}
                     </div>
                     <div className="text-xs text-stone-500 mt-0.5">
-                      {t.category}
-                      {t.dueDate && ` / 期限: ${t.dueDate.slice(5)}`}
+                      {t.startDate && t.dueDate && `${t.startDate.slice(5)} ~ ${t.dueDate.slice(5)}`}
                     </div>
                   </div>
                   {assignee && <span className="text-sm">{assignee.avatar}</span>}
@@ -120,39 +121,52 @@ export function OverviewTab() {
           </div>
         </div>
 
-        {/* Next Milestones */}
+        {/* Next Phases (replacing milestones) */}
         <div className="bg-white rounded-2xl border border-stone-200 p-5">
           <h3 className="font-bold text-stone-800 mb-4 flex items-center gap-2">
             <span>📅</span> 直近のマイルストーン
           </h3>
           <div className="space-y-2">
-            {nextMilestones.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-stone-50"
-              >
-                <button
-                  onClick={() => {
-                    const next = m.status === "upcoming" ? "in-progress" : m.status === "in-progress" ? "done" : "upcoming";
-                    store.updateMilestone(m.id, { status: next as "done" | "in-progress" | "upcoming" });
-                  }}
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                    m.status === "in-progress"
-                      ? "border-orange-400 bg-orange-50"
-                      : "border-stone-300 hover:border-orange-400"
-                  }`}
-                  title="ステータスを切り替え"
+            {nextPhases.map((p) => {
+              const children = store.getChildTasks(p.id);
+              const childDone = children.filter((c) => c.status === "done").length;
+              const childTotal = children.length;
+              const pct = childTotal > 0 ? Math.round((childDone / childTotal) * 100) : 0;
+
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-stone-50"
                 >
-                  {m.status === "in-progress" && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                  )}
-                </button>
-                <div className="min-w-0">
-                  <div className="font-medium text-stone-800 text-sm">{m.title}</div>
-                  <div className="text-xs text-stone-500 mt-0.5">{m.date}</div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    p.status === "in-progress"
+                      ? "border-orange-400 bg-orange-50"
+                      : "border-stone-300"
+                  }`}>
+                    {p.status === "in-progress" && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-stone-800 text-sm">{p.title}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-orange-400 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-stone-500">{childDone}/{childTotal}</span>
+                    </div>
+                    {p.startDate && p.dueDate && (
+                      <div className="text-xs text-stone-500 mt-0.5">
+                        {p.startDate.slice(5)} ~ {p.dueDate.slice(5)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

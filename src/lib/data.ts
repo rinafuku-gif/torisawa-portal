@@ -11,23 +11,15 @@ export interface Member {
   avatar: string;
 }
 
-export interface Milestone {
-  id: string;
-  title: string;
-  date: string;
-  status: "done" | "in-progress" | "upcoming";
-  description: string;
-  assignee?: string;
-}
-
 export interface Task {
   id: string;
   title: string;
   status: "done" | "in-progress" | "todo" | "blocked";
   priority: "high" | "medium" | "low";
   assignee: string;
-  category: string;
-  dueDate?: string;
+  startDate?: string; // YYYY-MM-DD
+  dueDate?: string;   // YYYY-MM-DD
+  parentId?: string;  // parent task ID (if child)
 }
 
 export interface RevenueScenario {
@@ -41,12 +33,6 @@ export interface RevenueScenario {
   ryoShare: string;
   vsRent: string;
   highlight?: boolean;
-}
-
-export interface SchedulePhase {
-  period: string;
-  theme: string;
-  tasks: { task: string; assignee: string; status: string; note?: string }[];
 }
 
 // ─── Members ───
@@ -70,289 +56,58 @@ export const members: Member[] = [
   },
 ];
 
-// ─── Milestones ───
+// ─── Tasks (hierarchical) ───
 
-export const milestones: Milestone[] = [
-  {
-    id: "m1",
-    title: "消防適合通知書 受領",
-    date: "2026-03",
-    status: "in-progress",
-    description: "消防署に連絡済み。通知書到着待ち。到着次第すぐ保健所へ",
-    assignee: "ryo",
-  },
-  {
-    id: "m2",
-    title: "ギア最終選定・オーナー承認",
-    date: "2026-03-10",
-    status: "done",
-    description: "全アイテムリスト確定。高木さんへ発注依頼送信",
-    assignee: "ryo",
-  },
-  {
-    id: "m3",
-    title: "ギア発注・購入",
-    date: "2026-03 2-3週",
-    status: "in-progress",
-    description: "Amazon・メルカリ等で購入。中古活用",
-    assignee: "ryo",
-  },
-  {
-    id: "m4",
-    title: "DIY施工（有孔ボード・照明・塗装）",
-    date: "2026-03 2-3週",
-    status: "upcoming",
-    description: "照明工事は業者手配。電気工事士資格必要",
-    assignee: "ryo",
-  },
-  {
-    id: "m5",
-    title: "セットアップ（ギア配置・スマートロック・Wi-Fi）",
-    date: "2026-03 4週",
-    status: "upcoming",
-    description: "ギアディスプレイ、キッチン備品、SwitchBot、Wi-Fi開通",
-    assignee: "ryo",
-  },
-  {
-    id: "m6",
-    title: "保健所へ営業許可申請",
-    date: "2026-04 1週",
-    status: "upcoming",
-    description: "消防適合通知書到着後すぐに申請",
-    assignee: "ryo",
-  },
-  {
-    id: "m7",
-    title: "ハウスルール・ガイド作成",
-    date: "2026-04 1週",
-    status: "upcoming",
-    description: "日英対応。ゴミ分別・騒音・水抜き・ギアの使い方含む",
-    assignee: "ryo",
-  },
-  {
-    id: "m8",
-    title: "保健所立入検査",
-    date: "2026-04 2週",
-    status: "upcoming",
-    description: "申請後1-2週で実施。消火器の設置が必要（誘導灯・報知器は設置済み）",
-  },
-  {
-    id: "m9",
-    title: "写真撮影・OTA掲載文作成",
-    date: "2026-04 2週",
-    status: "upcoming",
-    description: "ギア配置後に実施。コンセプト訴求",
-    assignee: "ryo",
-  },
-  {
-    id: "m10",
-    title: "営業許可書 受領 → Airbnb登録",
-    date: "2026-04 3-4週",
-    status: "upcoming",
-    description: "許可取得後、Airbnb登録・カレンダー設定・料金設定",
-    assignee: "ryo",
-  },
-  {
-    id: "m11",
-    title: "テスト宿泊（関係者）",
-    date: "2026-04 3週",
-    status: "upcoming",
-    description: "シャワー・ベッド・室温・ロック確認。動線チェック",
-    assignee: "ryo",
-  },
-  {
-    id: "m12",
-    title: "グランドオープン",
-    date: "2026-05",
-    status: "upcoming",
-    description: "正規料金設定。平日¥12,500 / 休前日¥15,500",
-  },
-];
+export const defaultTasks: Task[] = [
+  // Phase 1: 許認可
+  { id: "p1", title: "Phase 1: 許認可", status: "in-progress", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-04-20" },
+  { id: "p1-1", title: "消防適合通知書の受領確認", status: "in-progress", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-31", parentId: "p1" },
+  { id: "p1-2", title: "事業系一般廃棄物処理契約", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-31", parentId: "p1" },
+  { id: "p1-3", title: "簡易宿所営業許可申請", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p1" },
+  { id: "p1-4", title: "宿泊者名簿フォーマット準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-15", parentId: "p1" },
+  { id: "p1-5", title: "保健所立入検査", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-20", parentId: "p1" },
 
-// ─── Tasks ───
+  // Phase 2: 購入・発注
+  { id: "p2", title: "Phase 2: 購入・発注", status: "in-progress", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-04-06" },
+  { id: "p2-1", title: "ギア最終選定・オーナー承認", status: "done", priority: "high", assignee: "ryo", startDate: "2026-03-01", dueDate: "2026-03-10", parentId: "p2" },
+  { id: "p2-2", title: "防炎カーテン購入・設置", status: "done", priority: "high", assignee: "takagi", startDate: "2026-03-10", dueDate: "2026-03-16", parentId: "p2" },
+  { id: "p2-3", title: "中古品リサーチ・発注", status: "in-progress", priority: "medium", assignee: "ryo", startDate: "2026-03-10", dueDate: "2026-03-23", parentId: "p2" },
+  { id: "p2-4", title: "消火器 発注・設置", status: "todo", priority: "high", assignee: "takagi", startDate: "2026-03-17", dueDate: "2026-03-29", parentId: "p2" },
+  { id: "p2-5", title: "DIY資材購入", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-23", parentId: "p2" },
 
-export const tasks: Task[] = [
-  // 許認可
-  {
-    id: "t1",
-    title: "消防適合通知書の受領確認",
-    status: "in-progress",
-    priority: "high",
-    assignee: "ryo",
-    category: "許認可",
-  },
-  {
-    id: "t2",
-    title: "簡易宿所営業許可申請（保健所）",
-    status: "todo",
-    priority: "high",
-    assignee: "ryo",
-    category: "許認可",
-    dueDate: "2026-04-05",
-  },
-  {
-    id: "t3",
-    title: "事業系一般廃棄物処理契約（業者手配）",
-    status: "todo",
-    priority: "high",
-    assignee: "ryo",
-    category: "許認可",
-    dueDate: "2026-03-31",
-  },
-  {
-    id: "t4",
-    title: "宿泊者名簿フォーマット準備",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "許認可",
-    dueDate: "2026-04-15",
-  },
-  // 購入・施工
-  {
-    id: "t5",
-    title: "防炎カーテン選定・発注（保健所検査必須）",
-    status: "todo",
-    priority: "high",
-    assignee: "takagi",
-    category: "購入・施工",
-    dueDate: "2026-03-22",
-  },
-  {
-    id: "t6",
-    title: "消火器 発注・設置（誘導灯・報知器は設置済み）",
-    status: "todo",
-    priority: "high",
-    assignee: "takagi",
-    category: "購入・施工",
-    dueDate: "2026-03-29",
-  },
-  {
-    id: "t7",
-    title: "ギア到着確認・DIY資材購入",
-    status: "todo",
-    priority: "high",
-    assignee: "ryo",
-    category: "購入・施工",
-  },
-  {
-    id: "t8",
-    title: "有孔ボード設置・Gear Shed作成",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "購入・施工",
-  },
-  {
-    id: "t9",
-    title: "照明工事（業者手配）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "購入・施工",
-  },
-  {
-    id: "t10",
-    title: "塗装作業",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "購入・施工",
-  },
-  {
-    id: "t11",
-    title: "2階寝室エアコン設置交渉（オーナー負担）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "購入・施工",
-  },
-  // 運営準備
-  {
-    id: "t12",
-    title: "スマートロック設置・テスト（SwitchBot）",
-    status: "todo",
-    priority: "high",
-    assignee: "ryo",
-    category: "運営準備",
-    dueDate: "2026-03-29",
-  },
-  {
-    id: "t13",
-    title: "Wi-Fi開通・速度確認",
-    status: "todo",
-    priority: "high",
-    assignee: "ryo",
-    category: "運営準備",
-    dueDate: "2026-03-29",
-  },
-  {
-    id: "t14",
-    title: "タブレット設定・チェックインフロー構築",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "運営準備",
-  },
-  {
-    id: "t15",
-    title: "ハウスルール作成（日/英）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "運営準備",
-    dueDate: "2026-04-05",
-  },
-  {
-    id: "t16",
-    title: "周辺情報ガイド作成（川遊び・釣り・飲食店マップ）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "運営準備",
-  },
-  {
-    id: "t17",
-    title: "ギアレンタル規約作成",
-    status: "todo",
-    priority: "low",
-    assignee: "ryo",
-    category: "運営準備",
-  },
-  {
-    id: "t18",
-    title: "清掃オペレーション確立（所要時間・チェックリスト）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "運営準備",
-  },
-  // 集客・掲載
-  {
-    id: "t19",
-    title: "Airbnb掲載文作成（コンセプト訴求・ギアリスト）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "集客・掲載",
-    dueDate: "2026-04-12",
-  },
-  {
-    id: "t20",
-    title: "写真撮影（リスティング用）",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "集客・掲載",
-  },
-  {
-    id: "t21",
-    title: "OTA登録・料金・カレンダー設定",
-    status: "todo",
-    priority: "medium",
-    assignee: "ryo",
-    category: "集客・掲載",
-  },
+  // Phase 3: DIY施工
+  { id: "p3", title: "Phase 3: DIY施工", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-06" },
+  { id: "p3-1", title: "有孔ボード設置・Gear Shed作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-03-30", parentId: "p3" },
+  { id: "p3-2", title: "照明交換工事", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-03-30", parentId: "p3" },
+  { id: "p3-3", title: "塗装作業", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-06", parentId: "p3" },
+
+  // Phase 4: セットアップ
+  { id: "p4", title: "Phase 4: セットアップ", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-13" },
+  { id: "p4-1", title: "ギアディスプレイ配置", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
+  { id: "p4-2", title: "キッチン・備品設置", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
+  { id: "p4-3", title: "スマートロック設置・テスト", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
+  { id: "p4-4", title: "Wi-Fi開通・速度確認", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
+  { id: "p4-5", title: "タブレット設定", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p4" },
+  { id: "p4-6", title: "2階寝室エアコン設置交渉", status: "todo", priority: "medium", assignee: "ryo", parentId: "p4" },
+
+  // Phase 5: 運営準備
+  { id: "p5", title: "Phase 5: 運営準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-20" },
+  { id: "p5-1", title: "ハウスルール作成（日/英）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
+  { id: "p5-2", title: "ギアレンタル規約作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
+  { id: "p5-3", title: "周辺情報ガイド作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
+  { id: "p5-4", title: "清掃オペレーション確立", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-20", parentId: "p5" },
+
+  // Phase 6: 集客・掲載
+  { id: "p6", title: "Phase 6: 集客・掲載", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-27" },
+  { id: "p6-1", title: "OTA掲載文作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p6" },
+  { id: "p6-2", title: "写真撮影", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-20", parentId: "p6" },
+  { id: "p6-3", title: "Airbnb登録・料金設定", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-21", dueDate: "2026-04-27", parentId: "p6" },
+
+  // Phase 7: オープン
+  { id: "p7", title: "Phase 7: オープン", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-21", dueDate: "2026-05-10" },
+  { id: "p7-1", title: "テスト宿泊", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-21", dueDate: "2026-04-27", parentId: "p7" },
+  { id: "p7-2", title: "モニター価格で受付開始", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-28", dueDate: "2026-05-04", parentId: "p7" },
+  { id: "p7-3", title: "正規料金設定・本格運営開始", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-05-05", dueDate: "2026-05-10", parentId: "p7" },
 ];
 
 // ─── Revenue Scenarios ───
@@ -413,83 +168,6 @@ export const revenueScenarios: RevenueScenario[] = [
     ownerShare: "¥257,400",
     ryoShare: "¥138,600",
     vsRent: "+¥182,400",
-  },
-];
-
-// ─── Purchase Schedule ───
-
-export const schedulePhases: SchedulePhase[] = [
-  {
-    period: "〜3/16",
-    theme: "ギア確定＆発注（完了）",
-    tasks: [
-      { task: "ギア最終リスト確定", assignee: "稲福", status: "完了" },
-      { task: "オーナーへ発注依頼送信", assignee: "稲福", status: "完了" },
-      { task: "防炎カーテン購入・設置", assignee: "高木", status: "完了" },
-    ],
-  },
-  {
-    period: "3/17〜3/23",
-    theme: "発注＆DIY準備",
-    tasks: [
-      { task: "中古品リサーチ・発注（チェア・テーブル等）", assignee: "稲福", status: "進行中", note: "メルカリ・ヤフオク活用" },
-      { task: "照明工事の業者手配", assignee: "稲福", status: "進行中", note: "電気工事士資格必要" },
-      { task: "消火器 発注・設置", assignee: "高木", status: "未着手", note: "★保健所検査必須。誘導灯・報知器は設置済み" },
-      { task: "DIY資材購入（有孔ボード・塗料・木材）", assignee: "稲福", status: "未着手" },
-    ],
-  },
-  {
-    period: "3/24〜3/30",
-    theme: "DIY施工＆搬入",
-    tasks: [
-      { task: "ギア到着確認", assignee: "稲福/高木", status: "未着手" },
-      { task: "有孔ボード設置・Gear Shed作成", assignee: "稲福", status: "未着手" },
-      { task: "照明交換工事", assignee: "業者", status: "未着手" },
-      { task: "塗装作業（パレットベッド等）", assignee: "稲福", status: "未着手" },
-    ],
-  },
-  {
-    period: "3/31〜4/6",
-    theme: "セットアップ",
-    tasks: [
-      { task: "ギアディスプレイ配置", assignee: "稲福", status: "未着手" },
-      { task: "キッチン・備品設置", assignee: "稲福", status: "未着手" },
-      { task: "スマートロック設置・テスト", assignee: "稲福", status: "未着手" },
-      { task: "Wi-Fi開通・速度確認", assignee: "高木/稲福", status: "未着手" },
-      { task: "タブレット設定（チェックインフロー）", assignee: "稲福", status: "未着手" },
-      { task: "消防適合通知書 受領（目標）", assignee: "消防署", status: "未着手" },
-    ],
-  },
-  {
-    period: "4/7〜4/13",
-    theme: "許認可＆ルール整備",
-    tasks: [
-      { task: "保健所へ営業許可申請", assignee: "稲福", status: "未着手", note: "通知書到着後すぐ" },
-      { task: "ハウスルール作成（日/英）", assignee: "稲福", status: "未着手" },
-      { task: "ギアレンタル規約作成", assignee: "稲福", status: "未着手" },
-      { task: "周辺情報ガイド作成", assignee: "稲福", status: "未着手" },
-      { task: "OTA掲載文作成", assignee: "稲福", status: "未着手" },
-    ],
-  },
-  {
-    period: "4/14〜4/20",
-    theme: "検査＆撮影",
-    tasks: [
-      { task: "保健所立入検査（想定）", assignee: "保健所", status: "未着手" },
-      { task: "写真撮影（リスティング用）", assignee: "稲福", status: "未着手" },
-      { task: "清掃オペレーション確立", assignee: "稲福", status: "未着手" },
-    ],
-  },
-  {
-    period: "4/21〜5月上旬",
-    theme: "プレオープン → オープン",
-    tasks: [
-      { task: "営業許可書 受領（想定）", assignee: "保健所", status: "未着手" },
-      { task: "Airbnb登録・公開", assignee: "稲福", status: "未着手" },
-      { task: "テスト宿泊（関係者）", assignee: "稲福+知人", status: "未着手" },
-      { task: "モニター価格で受付開始", assignee: "稲福", status: "未着手", note: "通常の20%OFF等" },
-      { task: "正規料金設定・本格運営開始", assignee: "稲福", status: "未着手", note: "平日12,500/休前日15,500" },
-    ],
   },
 ];
 

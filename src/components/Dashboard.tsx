@@ -3,25 +3,23 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { OverviewTab } from "./tabs/OverviewTab";
-import { TimelineTab } from "./tabs/TimelineTab";
 import { TasksTab } from "./tabs/TasksTab";
+import { GanttTab } from "./tabs/GanttTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { RevenueTab } from "./tabs/RevenueTab";
-import { ScheduleTab } from "./tabs/ScheduleTab";
 import { GearTab } from "./tabs/GearTab";
 import { SitePhotosTab } from "./tabs/SitePhotosTab";
 
-type Tab = "overview" | "timeline" | "tasks" | "gear" | "documents" | "revenue" | "schedule" | "photos";
+type Tab = "overview" | "tasks" | "gantt" | "gear" | "documents" | "revenue" | "photos";
 
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "概要", icon: "📊" },
-  { id: "timeline", label: "タイムライン", icon: "📅" },
   { id: "tasks", label: "タスク", icon: "✅" },
+  { id: "gantt", label: "ガント", icon: "📅" },
   { id: "gear", label: "ギア管理", icon: "🛠️" },
   { id: "photos", label: "現場共有", icon: "📷" },
   { id: "documents", label: "資料", icon: "📁" },
   { id: "revenue", label: "収支計画", icon: "💰" },
-  { id: "schedule", label: "購入スケジュール", icon: "🛒" },
 ];
 
 export function Dashboard() {
@@ -88,13 +86,12 @@ export function Dashboard() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === "overview" && <OverviewTab />}
-        {activeTab === "timeline" && <TimelineTab />}
         {activeTab === "tasks" && <TasksTab />}
+        {activeTab === "gantt" && <GanttTab />}
         {activeTab === "gear" && <GearTab />}
         {activeTab === "photos" && <SitePhotosTab />}
         {activeTab === "documents" && <DocumentsTab />}
         {activeTab === "revenue" && <RevenueTab />}
-        {activeTab === "schedule" && <ScheduleTab />}
       </main>
     </div>
   );

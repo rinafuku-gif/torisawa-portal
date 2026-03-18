@@ -6,17 +6,12 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
-import {
-  milestones as defaultMilestones,
-  tasks as defaultTasks,
-  type Milestone,
-  type Task,
-} from "./data";
+import { defaultTasks, type Task } from "./data";
 
 interface StoreState {
-  milestones: Milestone[];
   tasks: Task[];
 }
 
@@ -25,138 +20,167 @@ interface StoreActions {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTaskStatus: (id: string) => void;
-  updateMilestone: (id: string, updates: Partial<Milestone>) => void;
+  getChildTasks: (parentId: string) => Task[];
+  getParentTasks: () => Task[];
   resetData: () => void;
 }
 
 type Store = StoreState & StoreActions;
 
-const STORAGE_KEY = "torisawa-portal-data";
+const STORAGE_KEY = "torisawa-portal-data-v2";
 
-interface LocalState {
-  milestones: Milestone[];
-  tasks: Task[];
-}
-
-function loadFromStorage(): LocalState | null {
+function loadFromStorage(): Task[] | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed.tasks && Array.isArray(parsed.tasks)) return parsed.tasks;
+    }
   } catch {
     // ignore
   }
   return null;
 }
 
-function saveToStorage(state: LocalState) {
+function saveToStorage(tasks: Task[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+/** Derive parent status from children */
+function deriveParentStatus(children: Task[]): Task["status"] {
+  if (children.length === 0) return "todo";
+  if (children.every((c) => c.status === "done")) return "done";
+  if (children.some((c) => c.status === "blocked")) return "in-progress";
+  if (children.some((c) => c.status === "in-progress" || c.status === "done")) return "in-progress";
+  return "todo";
+}
+
+/** Recalculate all parent statuses based on their children */
+function recalcParents(tasks: Task[]): Task[] {
+  const parentIds = new Set(tasks.filter((t) => !t.parentId).map((t) => t.id));
+  return tasks.map((t) => {
+    if (!parentIds.has(t.id)) return t;
+    const children = tasks.filter((c) => c.parentId === t.id);
+    if (children.length === 0) return t;
+    const derived = deriveParentStatus(children);
+    if (derived === t.status) return t;
+    return { ...t, status: derived };
+  });
 }
 
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [milestones, setMilestones] = useState<Milestone[]>(defaultMilestones);
   const [tasks, setTasks] = useState<Task[]>(defaultTasks);
 
   useEffect(() => {
     const stored = loadFromStorage();
     if (stored) {
-      setMilestones(stored.milestones);
-      setTasks(stored.tasks);
+      setTasks(recalcParents(stored));
     }
   }, []);
 
-  const persist = useCallback((ms: Milestone[], ts: Task[]) => {
-    saveToStorage({ milestones: ms, tasks: ts });
+  const persist = useCallback((ts: Task[]) => {
+    saveToStorage(ts);
   }, []);
 
   const addTask = useCallback(
     (task: Omit<Task, "id">) => {
       const id = `t_${Date.now()}`;
       setTasks((prev) => {
-        const next = [...prev, { ...task, id }];
-        persist(milestones, next);
+        const next = recalcParents([...prev, { ...task, id }]);
+        persist(next);
         return next;
       });
     },
-    [milestones, persist]
+    [persist]
   );
 
   const updateTask = useCallback(
     (id: string, updates: Partial<Task>) => {
       setTasks((prev) => {
-        const next = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
-        persist(milestones, next);
+        const next = recalcParents(
+          prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+        );
+        persist(next);
         return next;
       });
     },
-    [milestones, persist]
+    [persist]
   );
 
   const deleteTask = useCallback(
     (id: string) => {
       setTasks((prev) => {
-        const next = prev.filter((t) => t.id !== id);
-        persist(milestones, next);
+        // Also delete children if deleting a parent
+        const childIds = new Set(prev.filter((t) => t.parentId === id).map((t) => t.id));
+        const next = recalcParents(
+          prev.filter((t) => t.id !== id && !childIds.has(t.id))
+        );
+        persist(next);
         return next;
       });
     },
-    [milestones, persist]
+    [persist]
   );
 
   const toggleTaskStatus = useCallback(
     (id: string) => {
       setTasks((prev) => {
-        const next = prev.map((t) => {
-          if (t.id !== id) return t;
-          const nextStatus: Task["status"] =
-            t.status === "done"
-              ? "todo"
-              : t.status === "todo"
-              ? "in-progress"
-              : t.status === "in-progress"
-              ? "done"
-              : "todo";
-          return { ...t, status: nextStatus };
-        });
-        persist(milestones, next);
+        const target = prev.find((t) => t.id === id);
+        if (!target) return prev;
+        // Don't toggle parent tasks directly - they are derived
+        if (!target.parentId) return prev;
+        const nextStatus: Task["status"] =
+          target.status === "done"
+            ? "todo"
+            : target.status === "todo"
+            ? "in-progress"
+            : target.status === "in-progress"
+            ? "done"
+            : "todo";
+        const next = recalcParents(
+          prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
+        );
+        persist(next);
         return next;
       });
     },
-    [milestones, persist]
+    [persist]
   );
 
-  const updateMilestone = useCallback(
-    (id: string, updates: Partial<Milestone>) => {
-      setMilestones((prev) => {
-        const next = prev.map((m) =>
-          m.id === id ? { ...m, ...updates } : m
-        );
-        persist(next, tasks);
-        return next;
-      });
-    },
-    [tasks, persist]
+  const getChildTasks = useCallback(
+    (parentId: string) => tasks.filter((t) => t.parentId === parentId),
+    [tasks]
+  );
+
+  const getParentTasks = useCallback(
+    () => tasks.filter((t) => !t.parentId),
+    [tasks]
   );
 
   const resetData = useCallback(() => {
-    setMilestones(defaultMilestones);
-    setTasks(defaultTasks);
-    persist(defaultMilestones, defaultTasks);
+    const fresh = recalcParents([...defaultTasks]);
+    setTasks(fresh);
+    persist(fresh);
   }, [persist]);
 
-  const store: Store = {
-    milestones,
-    tasks,
-    addTask,
-    updateTask,
-    deleteTask,
-    toggleTaskStatus,
-    updateMilestone,
-    resetData,
-  };
+  const store: Store = useMemo(
+    () => ({
+      tasks,
+      addTask,
+      updateTask,
+      deleteTask,
+      toggleTaskStatus,
+      getChildTasks,
+      getParentTasks,
+      resetData,
+    }),
+    [tasks, addTask, updateTask, deleteTask, toggleTaskStatus, getChildTasks, getParentTasks, resetData]
+  );
 
   return (
     <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
