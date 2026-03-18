@@ -27,11 +27,21 @@ interface StoreActions {
 
 type Store = StoreState & StoreActions;
 
-const STORAGE_KEY = "torisawa-portal-data-v2";
+const STORAGE_KEY = "torisawa-portal-data-v3";
+const DATA_VERSION_KEY = "torisawa-data-version";
+// Bump this number whenever defaultTasks in data.ts changes significantly
+const CURRENT_DATA_VERSION = 2;
 
 function loadFromStorage(): Task[] | null {
   if (typeof window === "undefined") return null;
   try {
+    // Check if data version matches - if not, discard old data
+    const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
+    if (storedVersion && Number(storedVersion) < CURRENT_DATA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
+      return null;
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -47,6 +57,7 @@ function loadFromStorage(): Task[] | null {
 function saveToStorage(tasks: Task[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
 }
 
 /** Derive parent status from children */
