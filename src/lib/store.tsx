@@ -30,7 +30,7 @@ type Store = StoreState & StoreActions;
 const STORAGE_KEY = "torisawa-portal-data-v3";
 const DATA_VERSION_KEY = "torisawa-data-version";
 // Bump this number whenever defaultTasks in data.ts changes significantly
-const CURRENT_DATA_VERSION = 2;
+const CURRENT_DATA_VERSION = 3;
 
 function loadFromStorage(): Task[] | null {
   if (typeof window === "undefined") return null;
@@ -69,16 +69,21 @@ function deriveParentStatus(children: Task[]): Task["status"] {
   return "todo";
 }
 
-/** Recalculate all parent statuses based on their children */
+/** Recalculate all parent statuses AND date ranges based on their children */
 function recalcParents(tasks: Task[]): Task[] {
   const parentIds = new Set(tasks.filter((t) => !t.parentId).map((t) => t.id));
   return tasks.map((t) => {
     if (!parentIds.has(t.id)) return t;
     const children = tasks.filter((c) => c.parentId === t.id);
     if (children.length === 0) return t;
-    const derived = deriveParentStatus(children);
-    if (derived === t.status) return t;
-    return { ...t, status: derived };
+    const derivedStatus = deriveParentStatus(children);
+    // Derive date range from children
+    const childStarts = children.map((c) => c.startDate).filter(Boolean) as string[];
+    const childEnds = children.map((c) => c.dueDate).filter(Boolean) as string[];
+    const derivedStart = childStarts.length > 0 ? childStarts.sort()[0] : t.startDate;
+    const derivedEnd = childEnds.length > 0 ? childEnds.sort().reverse()[0] : t.dueDate;
+    if (derivedStatus === t.status && derivedStart === t.startDate && derivedEnd === t.dueDate) return t;
+    return { ...t, status: derivedStatus, startDate: derivedStart, dueDate: derivedEnd };
   });
 }
 
