@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { type SitePhoto, photoCategories } from "@/lib/gear-types";
 
+const PHOTOS_STORAGE_KEY = "torisawa-photos-data";
+
+function loadPhotos(): SitePhoto[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PHOTOS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return [];
+}
+
+function savePhotos(photos: SitePhoto[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(photos));
+}
+
 export function SitePhotosTab() {
   const { user } = useAuth();
-  const [photos, setPhotos] = useState<SitePhoto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [photos, setPhotos] = useState<SitePhoto[]>(() => loadPhotos());
+  const initialized = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState(photoCategories[0]);
@@ -15,20 +31,14 @@ export function SitePhotosTab() {
   const [catFilter, setCatFilter] = useState("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const fetchPhotos = useCallback(async () => {
-    try {
-      const res = await fetch("/api/photos");
-      if (res.ok) setPhotos(await res.json());
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Auto-save
   useEffect(() => {
-    fetchPhotos();
-  }, [fetchPhotos]);
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
+    }
+    savePhotos(photos);
+  }, [photos]);
 
   async function handleUpload() {
     const file = fileRef.current?.files?.[0];
@@ -36,22 +46,18 @@ export function SitePhotosTab() {
 
     setUploading(true);
     try {
-      // Compress image client-side
-      const compressed = await compressImage(file, 1200, 0.8);
-
-      const formData = new FormData();
-      formData.append("file", compressed, file.name);
-      formData.append("caption", caption);
-      formData.append("category", category);
-      formData.append("uploadedBy", user.name);
-
-      const res = await fetch("/api/photos", { method: "POST", body: formData });
-      if (res.ok) {
-        const photo = await res.json();
-        setPhotos((prev) => [photo, ...prev]);
-        setCaption("");
-        if (fileRef.current) fileRef.current.value = "";
-      }
+      const dataUrl = await compressImageToDataUrl(file, 800, 0.6);
+      const photo: SitePhoto = {
+        id: `photo_${Date.now()}`,
+        url: dataUrl,
+        caption,
+        uploadedBy: user.name,
+        uploadedAt: new Date().toISOString(),
+        category,
+      };
+      setPhotos((prev) => [photo, ...prev]);
+      setCaption("");
+      if (fileRef.current) fileRef.current.value = "";
     } catch (e) {
       console.error("Upload failed:", e);
     } finally {
@@ -59,18 +65,9 @@ export function SitePhotosTab() {
     }
   }
 
-  async function handleDelete(id: string) {
-    try {
-      await fetch("/api/photos", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      setPhotos((prev) => prev.filter((p) => p.id !== id));
-      setViewPhoto(null);
-    } catch {
-      // ignore
-    }
+  function handleDelete(id: string) {
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    setViewPhoto(null);
   }
 
   if (!user) return null;
@@ -84,6 +81,7 @@ export function SitePhotosTab() {
       {/* Upload Form */}
       <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
         <h3 className="font-bold text-stone-800 text-sm">写真をアップロード</h3>
+        <p className="text-xs text-stone-400">※ 写真はブラウザに保存されます（端末ごと）。大事な写真はGoogle Driveにもバックアップしてください</p>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <input
@@ -116,7 +114,7 @@ export function SitePhotosTab() {
               disabled={uploading}
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm disabled:opacity-50"
             >
-              {uploading ? "アップロード中..." : "アップロード"}
+              {uploading ? "処理中..." : "アップロード"}
             </button>
           </div>
         </div>
@@ -150,9 +148,7 @@ export function SitePhotosTab() {
       </div>
 
       {/* Photo Grid */}
-      {loading ? (
-        <div className="text-center py-12 text-stone-400">読み込み中...</div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-12 text-stone-400">
           {photos.length === 0 ? "まだ写真がありません。現場の状況を撮影してアップロードしましょう！" : "該当する写真がありません"}
         </div>
@@ -226,7 +222,7 @@ export function SitePhotosTab() {
   );
 }
 
-async function compressImage(file: File, maxWidth: number, quality: number): Promise<Blob> {
+async function compressImageToDataUrl(file: File, maxWidth: number, quality: number): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -241,11 +237,7 @@ async function compressImage(file: File, maxWidth: number, quality: number): Pro
       canvas.height = h;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(
-        (blob) => resolve(blob || file),
-        "image/jpeg",
-        quality
-      );
+      resolve(canvas.toDataURL("image/jpeg", quality));
     };
     img.src = URL.createObjectURL(file);
   });

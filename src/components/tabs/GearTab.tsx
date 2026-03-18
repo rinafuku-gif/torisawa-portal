@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import {
   type GearItem,
@@ -11,63 +11,55 @@ import {
   defaultGearItems,
 } from "@/lib/gear-types";
 
+const GEAR_STORAGE_KEY = "torisawa-gear-data";
+
+function loadGear(): GearItem[] {
+  if (typeof window === "undefined") return defaultGearItems;
+  try {
+    const raw = localStorage.getItem(GEAR_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return defaultGearItems;
+}
+
+function saveGear(items: GearItem[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(GEAR_STORAGE_KEY, JSON.stringify(items));
+}
+
 export function GearTab() {
   const { user } = useAuth();
-  const [items, setItems] = useState<GearItem[]>(defaultGearItems);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [items, setItems] = useState<GearItem[]>(() => loadGear());
+  const initialized = useRef(false);
   const [catFilter, setCatFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const fetchItems = useCallback(async () => {
-    try {
-      const res = await fetch("/api/gear");
-      if (res.ok) setItems(await res.json());
-    } catch {
-      // fallback to defaults
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Auto-save whenever items change
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
-
-  async function saveItems(updated: GearItem[]) {
-    setItems(updated);
-    setSaving(true);
-    try {
-      await fetch("/api/gear", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-    } catch {
-      // silent fail
-    } finally {
-      setSaving(false);
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
     }
-  }
+    saveGear(items);
+  }, [items]);
 
   function updateItem(id: string, updates: Partial<GearItem>) {
-    const updated = items.map((i) => (i.id === id ? { ...i, ...updates } : i));
-    saveItems(updated);
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
     if (updates.status !== undefined || Object.keys(updates).length > 1) {
       setEditingId(null);
     }
   }
 
   function deleteItem(id: string) {
-    saveItems(items.filter((i) => i.id !== id));
+    setItems((prev) => prev.filter((i) => i.id !== id));
     setEditingId(null);
   }
 
   function addItem(item: Omit<GearItem, "id">) {
     const id = `g_${Date.now()}`;
-    saveItems([...items, { ...item, id }]);
+    setItems((prev) => [...prev, { ...item, id }]);
     setShowAddForm(false);
   }
 
@@ -94,7 +86,6 @@ export function GearTab() {
           <h2 className="text-lg font-bold text-stone-800">ギア管理</h2>
           <p className="text-xs text-stone-500 mt-0.5">
             ステータスをクリックで変更。編集ボタンで詳細を修正できます
-            {saving && <span className="ml-2 text-orange-500">保存中...</span>}
           </p>
         </div>
         <button
@@ -167,8 +158,8 @@ export function GearTab() {
       )}
 
       {/* Gear List by Category */}
-      {loading ? (
-        <div className="text-center py-12 text-stone-400">読み込み中...</div>
+      {categories.length === 0 ? (
+        <div className="text-center py-12 text-stone-400">アイテムがありません</div>
       ) : (
         categories
           .filter((c) => catFilter === "all" || c === catFilter)
