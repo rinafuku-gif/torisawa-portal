@@ -58,9 +58,9 @@ export function OverviewTab() {
           color="emerald"
         />
         <StatCard
-          label="標準オーナー手取り"
-          value="¥118,625/月"
-          sub="稼働率 35% 時"
+          label="オーナー年間利益"
+          value="約142万円"
+          sub="標準シナリオ（稼働率35%）"
           color="amber"
         />
       </div>

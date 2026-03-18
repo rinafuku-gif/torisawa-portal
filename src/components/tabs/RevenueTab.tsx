@@ -104,6 +104,7 @@ export function RevenueTab() {
                 <th className="text-left px-3 py-2 font-medium text-stone-700">泊数</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">合計売上</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">オーナー手取り</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">運営委託費</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">vs 賃貸</th>
               </tr>
             </thead>
@@ -115,6 +116,7 @@ export function RevenueTab() {
                   <td className="px-3 py-2 text-stone-600">{s.nights}</td>
                   <td className="px-3 py-2 text-stone-800 font-medium">{s.total}</td>
                   <td className="px-3 py-2 text-stone-800 font-medium">{s.ownerShare}</td>
+                  <td className="px-3 py-2 text-stone-400">{s.ryoShare}</td>
                   <td className={`px-3 py-2 font-medium ${s.vsRent.startsWith("+") ? "text-emerald-600" : "text-rose-500"}`}>
                     {s.vsRent}
                   </td>
