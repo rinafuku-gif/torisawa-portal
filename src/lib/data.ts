@@ -134,7 +134,7 @@ export const milestones: Milestone[] = [
     title: "保健所立入検査",
     date: "2026-04 2週",
     status: "upcoming",
-    description: "申請後1-2週で実施。防炎カーテン・消火器・火災報知器必須",
+    description: "申請後1-2週で実施。消火器の設置が必要（誘導灯・報知器は設置済み）",
   },
   {
     id: "m9",
@@ -220,7 +220,7 @@ export const tasks: Task[] = [
   },
   {
     id: "t6",
-    title: "消火器・火災報知器・誘導灯 発注",
+    title: "消火器 発注・設置（誘導灯・報知器は設置済み）",
     status: "todo",
     priority: "high",
     assignee: "takagi",
@@ -434,7 +434,7 @@ export const schedulePhases: SchedulePhase[] = [
     tasks: [
       { task: "中古品リサーチ・発注（チェア・テーブル等）", assignee: "稲福", status: "進行中", note: "メルカリ・ヤフオク活用" },
       { task: "照明工事の業者手配", assignee: "稲福", status: "進行中", note: "電気工事士資格必要" },
-      { task: "防災用品発注（消火器・報知器・誘導灯）", assignee: "高木", status: "未着手", note: "★保健所検査必須" },
+      { task: "消火器 発注・設置", assignee: "高木", status: "未着手", note: "★保健所検査必須。誘導灯・報知器は設置済み" },
       { task: "DIY資材購入（有孔ボード・塗料・木材）", assignee: "稲福", status: "未着手" },
     ],
   },

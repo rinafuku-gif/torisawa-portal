@@ -106,4 +106,8 @@ export const defaultGearItems: GearItem[] = [
   { id: "g57", category: "備品", name: "スリッパ", product: "ニトリ 拭けるスリッパ", price: 600, quantity: 8, status: "未発注", priority: "必須", note: "ビニールレザー", shopUrl: "https://www.nitori-net.jp/ec/product/7822647s/" },
   { id: "g58", category: "備品", name: "充電ケーブル", product: "Anker PowerLine II 3-in-1", price: 2000, quantity: 2, status: "未発注", priority: "推奨", note: "忘れ物対策", shopUrl: "https://www.amazon.co.jp/dp/B071WNQYV6" },
   { id: "g59", category: "備品", name: "ハンガー", product: "ニトリ すべりにくいアーチ型 10本組", price: 300, quantity: 50, status: "未発注", priority: "推奨", note: "冬場アウター対応", shopUrl: "https://www.nitori-net.jp/ec/product/8470628s/" },
+  // F. 防災設備
+  { id: "g60", category: "防災設備", name: "消火器", product: "ABC粉末消火器 10型", price: 5000, quantity: 1, status: "未発注", priority: "必須", note: "★保健所検査必須。キッチン付近に設置", shopUrl: "https://www.amazon.co.jp/dp/B00AA8GWLY" },
+  { id: "g61", category: "防災設備", name: "誘導灯", product: "設置済み", price: 0, quantity: 1, status: "設置済", priority: "必須", note: "既存設備" },
+  { id: "g62", category: "防災設備", name: "火災報知器（煙感知式）", product: "設置済み", price: 0, quantity: 1, status: "設置済", priority: "必須", note: "既存設備。各居室・階段に設置確認済み" },
 ];
