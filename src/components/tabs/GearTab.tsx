@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import {
   type GearItem,
@@ -8,62 +8,115 @@ import {
   type GearStatus,
   type GearPriority,
   gearStatuses,
-  defaultGearItems,
 } from "@/lib/gear-types";
-
-const GEAR_STORAGE_KEY = "torisawa-gear-data";
-
-function loadGear(): GearItem[] {
-  if (typeof window === "undefined") return defaultGearItems;
-  try {
-    const raw = localStorage.getItem(GEAR_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return defaultGearItems;
-}
-
-function saveGear(items: GearItem[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(GEAR_STORAGE_KEY, JSON.stringify(items));
-}
 
 export function GearTab() {
   const { user } = useAuth();
-  const [items, setItems] = useState<GearItem[]>(() => loadGear());
-  const initialized = useRef(false);
+  const [items, setItems] = useState<GearItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [catFilter, setCatFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Auto-save whenever items change
-  useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      return;
+  const fetchGear = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/gear?seed=true");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "取得に失敗しました");
+      }
+      const data: GearItem[] = await res.json();
+      setItems(data);
+    } catch (e) {
+      console.error("Failed to fetch gear:", e);
+      setError(e instanceof Error ? e.message : "ギアデータの取得に失敗しました");
+    } finally {
+      setLoading(false);
     }
-    saveGear(items);
-  }, [items]);
+  }, []);
 
-  function updateItem(id: string, updates: Partial<GearItem>) {
+  useEffect(() => {
+    fetchGear();
+  }, [fetchGear]);
+
+  async function updateItem(id: string, updates: Partial<GearItem>) {
+    // Optimistic update
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
     if (updates.status !== undefined || Object.keys(updates).length > 1) {
       setEditingId(null);
     }
+    try {
+      const res = await fetch(`/api/gear/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error("更新に失敗");
+    } catch (e) {
+      console.error("Failed to update gear:", e);
+      setError("更新に失敗しました。再読み込みしてください");
+      fetchGear();
+    }
   }
 
-  function deleteItem(id: string) {
+  async function deleteItem(id: string) {
+    // Optimistic delete
     setItems((prev) => prev.filter((i) => i.id !== id));
     setEditingId(null);
+    try {
+      const res = await fetch(`/api/gear/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("削除に失敗");
+    } catch (e) {
+      console.error("Failed to delete gear:", e);
+      setError("削除に失敗しました。再読み込みしてください");
+      fetchGear();
+    }
   }
 
-  function addItem(item: Omit<GearItem, "id">) {
-    const id = `g_${Date.now()}`;
-    setItems((prev) => [...prev, { ...item, id }]);
+  async function addItem(item: Omit<GearItem, "id">) {
     setShowAddForm(false);
+    try {
+      const res = await fetch("/api/gear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      if (!res.ok) throw new Error("作成に失敗");
+      const created: GearItem = await res.json();
+      setItems((prev) => [...prev, created]);
+    } catch (e) {
+      console.error("Failed to add gear:", e);
+      setError("追加に失敗しました");
+    }
   }
 
   if (!user) return null;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-orange-400 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-stone-500">ギアデータを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && items.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-rose-500 mb-3">{error}</p>
+        <button onClick={fetchGear} className="text-sm px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+          再読み込み
+        </button>
+      </div>
+    );
+  }
 
   const categories = [...new Set(items.map((i) => i.category))];
   const filtered = items.filter(
@@ -88,13 +141,27 @@ export function GearTab() {
             ステータスをクリックで変更。編集ボタンで詳細を修正できます
           </p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="text-sm px-4 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
-        >
-          + アイテム追加
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchGear}
+            className="text-sm px-3 py-1.5 text-stone-600 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+          >
+            更新
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="text-sm px-4 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+          >
+            + アイテム追加
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="bg-rose-50 text-rose-600 text-sm px-4 py-2 rounded-lg border border-rose-200">
+          {error}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -263,7 +330,7 @@ function GearRow({
             ¥{(item.price * item.quantity).toLocaleString()}
           </div>
           <div className="text-xs text-stone-400">
-            {item.quantity > 1 && `¥${item.price.toLocaleString()} × ${item.quantity}`}
+            {item.quantity > 1 && `¥${item.price.toLocaleString()} x ${item.quantity}`}
           </div>
         </div>
         {item.shopUrl && !isSelecting && (

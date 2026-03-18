@@ -5,15 +5,16 @@ import {
   useContext,
   useState,
   useEffect,
-  useRef,
   useCallback,
   useMemo,
   type ReactNode,
 } from "react";
-import { defaultTasks, type Task } from "./data";
+import { type Task } from "./data";
 
 interface StoreState {
   tasks: Task[];
+  tasksLoading: boolean;
+  tasksError: string | null;
 }
 
 interface StoreActions {
@@ -23,41 +24,11 @@ interface StoreActions {
   toggleTaskStatus: (id: string) => void;
   getChildTasks: (parentId: string) => Task[];
   getParentTasks: () => Task[];
+  refreshTasks: () => void;
   resetData: () => void;
 }
 
 type Store = StoreState & StoreActions;
-
-const STORAGE_KEY = "torisawa-portal-data-v3";
-const DATA_VERSION_KEY = "torisawa-data-version";
-const CURRENT_DATA_VERSION = 3;
-
-function loadFromStorage(): Task[] | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const storedVersion = Number(localStorage.getItem(DATA_VERSION_KEY) || "0");
-    if (storedVersion < CURRENT_DATA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
-      return null;
-    }
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-      if (parsed.tasks && Array.isArray(parsed.tasks)) return parsed.tasks;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-function saveToStorage(tasks: Task[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
-}
 
 /** Derive parent status from children */
 function deriveParentStatus(children: Task[]): Task["status"] {
@@ -88,48 +59,96 @@ function recalcParents(tasks: Task[]): Task[] {
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    // Initialize from localStorage synchronously to avoid flash of default data
-    if (typeof window === "undefined") return defaultTasks;
-    const stored = loadFromStorage();
-    return stored ? recalcParents(stored) : recalcParents([...defaultTasks]);
-  });
-  const initialized = useRef(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksError, setTasksError] = useState<string | null>(null);
 
-  // Auto-save to localStorage whenever tasks change (after initial load)
-  useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      return;
+  const fetchFromAPI = useCallback(async () => {
+    setTasksLoading(true);
+    setTasksError(null);
+    try {
+      const res = await fetch("/api/tasks?seed=true");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "タスクの取得に失敗しました");
+      }
+      const data: Task[] = await res.json();
+      setTasks(recalcParents(data));
+    } catch (e) {
+      console.error("Failed to fetch tasks:", e);
+      setTasksError(e instanceof Error ? e.message : "タスクの取得に失敗しました");
+    } finally {
+      setTasksLoading(false);
     }
-    saveToStorage(tasks);
-  }, [tasks]);
+  }, []);
+
+  useEffect(() => {
+    fetchFromAPI();
+  }, [fetchFromAPI]);
+
+  const refreshTasks = useCallback(() => {
+    fetchFromAPI();
+  }, [fetchFromAPI]);
 
   const addTask = useCallback(
-    (task: Omit<Task, "id">) => {
-      const id = `t_${Date.now()}`;
-      setTasks((prev) => recalcParents([...prev, { ...task, id }]));
+    async (task: Omit<Task, "id">) => {
+      try {
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(task),
+        });
+        if (!res.ok) throw new Error("作成に失敗");
+        const created: Task = await res.json();
+        setTasks((prev) => recalcParents([...prev, created]));
+      } catch (e) {
+        console.error("Failed to add task:", e);
+        setTasksError("タスクの追加に失敗しました");
+      }
     },
     []
   );
 
   const updateTask = useCallback(
-    (id: string, updates: Partial<Task>) => {
+    async (id: string, updates: Partial<Task>) => {
+      // Optimistic update
       setTasks((prev) =>
         recalcParents(prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
       );
+      try {
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) throw new Error("更新に失敗");
+      } catch (e) {
+        console.error("Failed to update task:", e);
+        setTasksError("タスクの更新に失敗しました。再読み込みしてください");
+        // Revert by refreshing
+        fetchFromAPI();
+      }
     },
-    []
+    [fetchFromAPI]
   );
 
   const deleteTask = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      // Optimistic delete (including children)
       setTasks((prev) => {
         const childIds = new Set(prev.filter((t) => t.parentId === id).map((t) => t.id));
         return recalcParents(prev.filter((t) => t.id !== id && !childIds.has(t.id)));
       });
+      try {
+        const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("削除に失敗");
+      } catch (e) {
+        console.error("Failed to delete task:", e);
+        setTasksError("タスクの削除に失敗しました。再読み込みしてください");
+        fetchFromAPI();
+      }
     },
-    []
+    [fetchFromAPI]
   );
 
   const toggleTaskStatus = useCallback(
@@ -145,6 +164,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : target.status === "in-progress"
             ? "done"
             : "todo";
+        // Fire off the API call (non-blocking)
+        fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        }).catch((e) => console.error("Failed to toggle task:", e));
+
         return recalcParents(
           prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
         );
@@ -164,21 +190,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const resetData = useCallback(() => {
-    setTasks(recalcParents([...defaultTasks]));
-  }, []);
+    refreshTasks();
+  }, [refreshTasks]);
 
   const store: Store = useMemo(
     () => ({
       tasks,
+      tasksLoading,
+      tasksError,
       addTask,
       updateTask,
       deleteTask,
       toggleTaskStatus,
       getChildTasks,
       getParentTasks,
+      refreshTasks,
       resetData,
     }),
-    [tasks, addTask, updateTask, deleteTask, toggleTaskStatus, getChildTasks, getParentTasks, resetData]
+    [tasks, tasksLoading, tasksError, addTask, updateTask, deleteTask, toggleTaskStatus, getChildTasks, getParentTasks, refreshTasks, resetData]
   );
 
   return (
