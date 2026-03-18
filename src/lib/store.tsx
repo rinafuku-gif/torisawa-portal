@@ -35,13 +35,14 @@ const CURRENT_DATA_VERSION = 3;
 function loadFromStorage(): Task[] | null {
   if (typeof window === "undefined") return null;
   try {
-    // Check if data version matches - if not, discard old data
-    const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
-    if (storedVersion && Number(storedVersion) < CURRENT_DATA_VERSION) {
+    const storedVersion = Number(localStorage.getItem(DATA_VERSION_KEY) || "0");
+    // Old version → discard and use fresh defaults (one-time reset)
+    if (storedVersion < CURRENT_DATA_VERSION) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(DATA_VERSION_KEY, String(CURRENT_DATA_VERSION));
       return null;
     }
+    // Same version → load saved data
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
