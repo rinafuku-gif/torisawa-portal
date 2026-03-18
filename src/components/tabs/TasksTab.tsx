@@ -35,7 +35,16 @@ export function TasksTab() {
 
   if (!user) return null;
 
-  let visibleTasks = [...store.tasks];
+  let visibleTasks = [...store.tasks].sort((a, b) => {
+    // done tasks go to the bottom
+    if (a.status === "done" && b.status !== "done") return 1;
+    if (a.status !== "done" && b.status === "done") return -1;
+    // sort by due date (nearest first, no date goes last)
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && b.dueDate) return 1;
+    return 0;
+  });
 
   if (filter === "mine") {
     visibleTasks = visibleTasks.filter((t) => t.assignee === user.id);
@@ -280,6 +289,7 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [assignee, setAssignee] = useState(task.assignee);
+  const [category, setCategory] = useState(task.category);
   const [dueDate, setDueDate] = useState(task.dueDate || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -306,12 +316,22 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
           </select>
         </div>
         <div className="flex gap-2">
+          <select value={category} onChange={(e) => setCategory(e.target.value)}
+            className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs bg-white">
+            <option value="許認可">許認可</option>
+            <option value="購入・施工">購入・施工</option>
+            <option value="運営準備">運営準備</option>
+            <option value="集客・掲載">集客・掲載</option>
+            <option value="その他">その他</option>
+          </select>
           <select value={assignee} onChange={(e) => setAssignee(e.target.value)}
             className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs bg-white">
             {members.map((m) => <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>)}
           </select>
+        </div>
+        <div>
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-            className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs" />
+            className="w-full px-2 py-1.5 border border-stone-200 rounded-lg text-xs" />
         </div>
       </div>
       <div className="flex justify-between mt-3">
@@ -329,7 +349,7 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
         <div className="flex gap-2">
           <button onClick={onCancel} className="text-xs px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-lg">キャンセル</button>
           <button
-            onClick={() => onSave({ title, status, priority, assignee, dueDate: dueDate || undefined })}
+            onClick={() => onSave({ title, status, priority, assignee, category, dueDate: dueDate || undefined })}
             className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium"
           >保存</button>
         </div>
