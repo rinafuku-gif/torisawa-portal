@@ -106,12 +106,24 @@ export async function fetchTasks(): Promise<Task[]> {
       data_source_id: TASKS_DB,
       start_cursor: cursor,
       page_size: 100,
+      sorts: [{ timestamp: "created_time", direction: "ascending" }],
     });
     pages.push(...res.results);
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
 
-  return pages.map(notionPageToTask);
+  const tasks = pages.map(notionPageToTask);
+  // Ensure parent tasks come before their children
+  const parents = tasks.filter((t) => !t.parentId);
+  const result: Task[] = [];
+  for (const p of parents) {
+    result.push(p);
+    result.push(...tasks.filter((t) => t.parentId === p.id));
+  }
+  // Add any orphans at the end
+  const placed = new Set(result.map((t) => t.id));
+  result.push(...tasks.filter((t) => !placed.has(t.id)));
+  return result;
 }
 
 export async function createTask(task: Omit<Task, "id">): Promise<Task> {
@@ -230,6 +242,9 @@ function notionPageToGear(page: any): GearItem {
   };
 }
 
+// Gear category order for consistent display
+const gearCategoryOrder = ["家電", "寝具・家具", "キャンプギア", "DIY・内装", "備品", "防災設備"];
+
 export async function fetchGear(): Promise<GearItem[]> {
   const pages = [];
   let cursor: string | undefined = undefined;
@@ -239,12 +254,21 @@ export async function fetchGear(): Promise<GearItem[]> {
       data_source_id: GEAR_DB,
       start_cursor: cursor,
       page_size: 100,
+      sorts: [{ timestamp: "created_time", direction: "ascending" }],
     });
     pages.push(...res.results);
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
 
-  return pages.map(notionPageToGear);
+  const items = pages.map(notionPageToGear);
+  // Sort by category order, then by creation order within each category
+  items.sort((a, b) => {
+    const catA = gearCategoryOrder.indexOf(a.category);
+    const catB = gearCategoryOrder.indexOf(b.category);
+    if (catA !== catB) return (catA === -1 ? 999 : catA) - (catB === -1 ? 999 : catB);
+    return 0; // preserve created_time order within category
+  });
+  return items;
 }
 
 export async function createGearItem(item: Omit<GearItem, "id">): Promise<GearItem> {
