@@ -233,15 +233,9 @@ function GearRow({
 }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const statusIdx = gearStatuses.findIndex((s) => s.value === item.status);
-  const statusStyle = gearStatuses[statusIdx];
+  const statusStyle = gearStatuses.find((s) => s.value === item.status) || gearStatuses[0];
   const isSelecting = item.status === "選定中";
   const comments = item.comments || [];
-
-  function cycleStatus() {
-    const nextIdx = (statusIdx + 1) % gearStatuses.length;
-    onStatusChange(gearStatuses[nextIdx].value);
-  }
 
   function handleAddComment() {
     if (!commentText.trim()) return;
@@ -252,13 +246,15 @@ function GearRow({
   return (
     <div>
       <div className={`px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group ${isSelecting ? "bg-purple-50/50" : ""}`}>
-        <button
-          onClick={cycleStatus}
-          className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all hover:ring-2 hover:ring-orange-300 ${statusStyle.color}`}
-          title="クリックでステータス変更"
+        <select
+          value={item.status}
+          onChange={(e) => onStatusChange(e.target.value as GearStatus)}
+          className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all border-0 cursor-pointer ${statusStyle.color}`}
         >
-          {statusStyle.label}
-        </button>
+          {gearStatuses.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={`text-sm font-medium ${isSelecting ? "text-purple-800" : "text-stone-800"}`}>{item.name}</span>

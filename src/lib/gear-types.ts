@@ -93,7 +93,7 @@ export const defaultGearItems: GearItem[] = [
   { id: "g45", category: "DIY・内装", name: "照明器具", product: "ライティングレール＋スポット", price: 80000, quantity: 1, status: "未発注", priority: "必須", note: "電気工事込" },
   { id: "g46", category: "DIY・内装", name: "塗装・補修材", product: "ワトコオイル ナチュラル", price: 20000, quantity: 1, status: "未発注", priority: "推奨", note: "柱・棚の着色", shopUrl: "https://www.amazon.co.jp/dp/B00GWBQSW0" },
   { id: "g47", category: "DIY・内装", name: "棚・木材", product: "2×4材・集成材", price: 25000, quantity: 1, status: "未発注", priority: "推奨", note: "キッチン・洗面所" },
-  { id: "g48", category: "DIY・内装", name: "防炎カーテン", product: "ニトリ 防炎1級遮光 100x210cm", price: 15000, quantity: 3, status: "設置済", priority: "必須", note: "購入・設置完了", shopUrl: "https://www.amazon.co.jp/dp/B0CHM664FT" },
+  { id: "g48", category: "DIY・内装", name: "ラグ", product: "イグサ or リネン素材", price: 10000, quantity: 1, status: "未発注", priority: "推奨", note: "リビング・質感向上" },
   // E. 備品
   { id: "g49", category: "備品", name: "アメニティボトル", product: "ディスペンサー3本セット 1000ml", price: 5000, quantity: 1, status: "未発注", priority: "必須", note: "", shopUrl: "https://www.amazon.co.jp/dp/B09J8FFY8G" },
   { id: "g50", category: "備品", name: "キッチンツール一式", product: "調理器具10点セット KC-10", price: 15000, quantity: 1, status: "未発注", priority: "必須", note: "", shopUrl: "https://www.amazon.co.jp/dp/B0FT7RZS7Y" },
