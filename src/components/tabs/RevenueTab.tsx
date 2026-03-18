@@ -7,8 +7,8 @@ export function RevenueTab() {
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-stone-800">収支計画</h2>
 
-      {/* Key Numbers */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Key Numbers - オーナー視点 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-orange-50 rounded-2xl border border-orange-200 p-5">
           <div className="text-sm text-orange-700 font-medium">平均宿泊単価</div>
           <div className="text-2xl font-bold text-stone-800 mt-1">¥15,000/泊</div>
@@ -17,17 +17,12 @@ export function RevenueTab() {
         <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-5">
           <div className="text-sm text-emerald-700 font-medium">損益分岐点</div>
           <div className="text-2xl font-bold text-stone-800 mt-1">月8泊</div>
-          <div className="text-xs text-emerald-600 mt-1">稼働率 26%</div>
+          <div className="text-xs text-emerald-600 mt-1">稼働率 26% で現賃貸超え</div>
         </div>
         <div className="bg-sky-50 rounded-2xl border border-sky-200 p-5">
           <div className="text-sm text-sky-700 font-medium">現賃貸収入</div>
           <div className="text-2xl font-bold text-stone-800 mt-1">¥75,000/月</div>
-          <div className="text-xs text-sky-600 mt-1">これを超えれば勝ち</div>
-        </div>
-        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5">
-          <div className="text-sm text-amber-700 font-medium">稲福年間収入</div>
-          <div className="text-2xl font-bold text-stone-800 mt-1">¥84〜101万</div>
-          <div className="text-xs text-amber-600 mt-1">標準〜楽観シナリオ</div>
+          <div className="text-xs text-sky-600 mt-1">比較基準</div>
         </div>
       </div>
 
@@ -68,7 +63,36 @@ export function RevenueTab() {
         </div>
       </div>
 
-      {/* Monthly P&L Simulation */}
+      {/* Revenue Share - 控えめに */}
+      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+        <h3 className="font-bold text-stone-800 mb-4">経費構造</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-stone-50">
+                <th className="text-left px-4 py-2 font-medium text-stone-700">売上項目</th>
+                <th className="text-left px-4 py-2 font-medium text-stone-700">オーナー取り分</th>
+                <th className="text-left px-4 py-2 font-medium text-stone-700">運営委託費</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              <tr>
+                <td className="px-4 py-2 text-stone-800">宿泊料金</td>
+                <td className="px-4 py-2 font-medium text-stone-800">65%</td>
+                <td className="px-4 py-2 text-stone-500">35%</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2 text-stone-800">ギアレンタル</td>
+                <td className="px-4 py-2 font-medium text-stone-800">65%</td>
+                <td className="px-4 py-2 text-stone-500">35%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-stone-400 mt-3">※ 運営委託費には清掃・リネン代を含む</p>
+      </div>
+
+      {/* Monthly P&L - オーナー視点 */}
       <div className="bg-white rounded-2xl border border-stone-200 p-6">
         <h3 className="font-bold text-stone-800 mb-4">月次収支シミュレーション</h3>
         <div className="overflow-x-auto">
@@ -79,8 +103,7 @@ export function RevenueTab() {
                 <th className="text-left px-3 py-2 font-medium text-stone-700">稼働率</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">泊数</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">合計売上</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-700">オーナー</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-700">稲福</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-700">オーナー手取り</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-700">vs 賃貸</th>
               </tr>
             </thead>
@@ -91,8 +114,7 @@ export function RevenueTab() {
                   <td className="px-3 py-2 text-stone-600">{s.occupancy}</td>
                   <td className="px-3 py-2 text-stone-600">{s.nights}</td>
                   <td className="px-3 py-2 text-stone-800 font-medium">{s.total}</td>
-                  <td className="px-3 py-2 text-stone-600">{s.ownerShare}</td>
-                  <td className="px-3 py-2 text-orange-600">{s.ryoShare}</td>
+                  <td className="px-3 py-2 text-stone-800 font-medium">{s.ownerShare}</td>
                   <td className={`px-3 py-2 font-medium ${s.vsRent.startsWith("+") ? "text-emerald-600" : "text-rose-500"}`}>
                     {s.vsRent}
                   </td>
@@ -101,6 +123,7 @@ export function RevenueTab() {
             </tbody>
           </table>
         </div>
+        <p className="text-xs text-stone-400 mt-3">※ オーナー手取り = 売上 × 65%（運営委託費35%控除後）</p>
       </div>
 
       {/* Seasonal Strategy */}

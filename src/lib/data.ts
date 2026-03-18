@@ -36,7 +36,6 @@ export interface RevenueScenario {
   nights: string;
   stayRevenue: string;
   gearRental: string;
-  experience: string;
   total: string;
   ownerShare: string;
   ryoShare: string;
@@ -354,14 +353,6 @@ export const tasks: Task[] = [
     assignee: "ryo",
     category: "集客・掲載",
   },
-  {
-    id: "t22",
-    title: "えんがわ連携告知（Instagram・ゲスト案内）",
-    status: "todo",
-    priority: "low",
-    assignee: "ryo",
-    category: "集客・掲載",
-  },
 ];
 
 // ─── Revenue Scenarios ───
@@ -373,7 +364,6 @@ export const revenueScenarios: RevenueScenario[] = [
     nights: "6泊",
     stayRevenue: "¥90,000",
     gearRental: "¥10,000",
-    experience: "—",
     total: "¥100,000",
     ownerShare: "¥65,000",
     ryoShare: "¥35,000",
@@ -385,11 +375,10 @@ export const revenueScenarios: RevenueScenario[] = [
     nights: "7.5泊",
     stayRevenue: "¥112,500",
     gearRental: "¥15,000",
-    experience: "¥5,000",
-    total: "¥132,500",
-    ownerShare: "¥87,125",
-    ryoShare: "¥45,375",
-    vsRent: "+¥12,125",
+    total: "¥127,500",
+    ownerShare: "¥82,875",
+    ryoShare: "¥44,625",
+    vsRent: "+¥7,875",
   },
   {
     label: "★ 標準",
@@ -397,11 +386,10 @@ export const revenueScenarios: RevenueScenario[] = [
     nights: "10.5泊",
     stayRevenue: "¥157,500",
     gearRental: "¥25,000",
-    experience: "¥15,000",
-    total: "¥197,500",
-    ownerShare: "¥131,125",
-    ryoShare: "¥66,375",
-    vsRent: "+¥56,125",
+    total: "¥182,500",
+    ownerShare: "¥118,625",
+    ryoShare: "¥63,875",
+    vsRent: "+¥43,625",
     highlight: true,
   },
   {
@@ -410,11 +398,10 @@ export const revenueScenarios: RevenueScenario[] = [
     nights: "15泊",
     stayRevenue: "¥225,000",
     gearRental: "¥40,000",
-    experience: "¥30,000",
-    total: "¥295,000",
-    ownerShare: "¥197,750",
-    ryoShare: "¥97,250",
-    vsRent: "+¥122,750",
+    total: "¥265,000",
+    ownerShare: "¥172,250",
+    ryoShare: "¥92,750",
+    vsRent: "+¥97,250",
   },
   {
     label: "繁忙期",
@@ -422,11 +409,10 @@ export const revenueScenarios: RevenueScenario[] = [
     nights: "21泊",
     stayRevenue: "¥336,000",
     gearRental: "¥60,000",
-    experience: "¥50,000",
-    total: "¥446,000",
-    ownerShare: "¥300,150",
-    ryoShare: "¥145,850",
-    vsRent: "+¥225,150",
+    total: "¥396,000",
+    ownerShare: "¥257,400",
+    ryoShare: "¥138,600",
+    vsRent: "+¥182,400",
   },
 ];
 
@@ -434,45 +420,51 @@ export const revenueScenarios: RevenueScenario[] = [
 
 export const schedulePhases: SchedulePhase[] = [
   {
-    period: "3/2週 (3/10〜15)",
-    theme: "ギア確定＆発注",
+    period: "〜3/16",
+    theme: "ギア確定＆発注（完了）",
     tasks: [
       { task: "ギア最終リスト確定", assignee: "稲福", status: "完了" },
       { task: "オーナーへ発注依頼送信", assignee: "稲福", status: "完了" },
-      { task: "中古品リサーチ（チェア・テーブル等）", assignee: "稲福", status: "進行中", note: "メルカリ・ヤフオク活用" },
-      { task: "照明工事の業者手配", assignee: "稲福", status: "進行中", note: "電気工事士資格必要" },
-      { task: "防炎カーテン選定・発注", assignee: "高木", status: "未着手", note: "★保健所検査で必須" },
+      { task: "防炎カーテン購入・設置", assignee: "高木", status: "完了" },
     ],
   },
   {
-    period: "3/3週 (3/16〜22)",
-    theme: "DIY＆搬入",
+    period: "3/17〜3/23",
+    theme: "発注＆DIY準備",
+    tasks: [
+      { task: "中古品リサーチ・発注（チェア・テーブル等）", assignee: "稲福", status: "進行中", note: "メルカリ・ヤフオク活用" },
+      { task: "照明工事の業者手配", assignee: "稲福", status: "進行中", note: "電気工事士資格必要" },
+      { task: "防災用品発注（消火器・報知器・誘導灯）", assignee: "高木", status: "未着手", note: "★保健所検査必須" },
+      { task: "DIY資材購入（有孔ボード・塗料・木材）", assignee: "稲福", status: "未着手" },
+    ],
+  },
+  {
+    period: "3/24〜3/30",
+    theme: "DIY施工＆搬入",
     tasks: [
       { task: "ギア到着確認", assignee: "稲福/高木", status: "未着手" },
-      { task: "DIY資材購入（有孔ボード・塗料・木材）", assignee: "稲福", status: "未着手" },
       { task: "有孔ボード設置・Gear Shed作成", assignee: "稲福", status: "未着手" },
       { task: "照明交換工事", assignee: "業者", status: "未着手" },
-      { task: "塗装作業", assignee: "稲福", status: "未着手" },
-      { task: "防災用品発注（消火器・報知器・誘導灯）", assignee: "高木", status: "未着手", note: "★保健所検査必須" },
+      { task: "塗装作業（パレットベッド等）", assignee: "稲福", status: "未着手" },
     ],
   },
   {
-    period: "3/4週 (3/23〜29)",
+    period: "3/31〜4/6",
     theme: "セットアップ",
     tasks: [
       { task: "ギアディスプレイ配置", assignee: "稲福", status: "未着手" },
       { task: "キッチン・備品設置", assignee: "稲福", status: "未着手" },
       { task: "スマートロック設置・テスト", assignee: "稲福", status: "未着手" },
       { task: "Wi-Fi開通・速度確認", assignee: "高木/稲福", status: "未着手" },
-      { task: "タブレット設定", assignee: "稲福", status: "未着手" },
+      { task: "タブレット設定（チェックインフロー）", assignee: "稲福", status: "未着手" },
       { task: "消防適合通知書 受領（目標）", assignee: "消防署", status: "未着手" },
     ],
   },
   {
-    period: "4/1週 (3/30〜4/5)",
-    theme: "許認可＆ルール",
+    period: "4/7〜4/13",
+    theme: "許認可＆ルール整備",
     tasks: [
-      { task: "保健所へ営業許可申請", assignee: "稲福", status: "未着手" },
+      { task: "保健所へ営業許可申請", assignee: "稲福", status: "未着手", note: "通知書到着後すぐ" },
       { task: "ハウスルール作成（日/英）", assignee: "稲福", status: "未着手" },
       { task: "ギアレンタル規約作成", assignee: "稲福", status: "未着手" },
       { task: "周辺情報ガイド作成", assignee: "稲福", status: "未着手" },
@@ -480,7 +472,7 @@ export const schedulePhases: SchedulePhase[] = [
     ],
   },
   {
-    period: "4/2週 (4/6〜12)",
+    period: "4/14〜4/20",
     theme: "検査＆撮影",
     tasks: [
       { task: "保健所立入検査（想定）", assignee: "保健所", status: "未着手" },
@@ -489,23 +481,14 @@ export const schedulePhases: SchedulePhase[] = [
     ],
   },
   {
-    period: "4/3-4週 (4/13〜)",
-    theme: "プレオープン",
+    period: "4/21〜5月上旬",
+    theme: "プレオープン → オープン",
     tasks: [
       { task: "営業許可書 受領（想定）", assignee: "保健所", status: "未着手" },
       { task: "Airbnb登録・公開", assignee: "稲福", status: "未着手" },
       { task: "テスト宿泊（関係者）", assignee: "稲福+知人", status: "未着手" },
       { task: "モニター価格で受付開始", assignee: "稲福", status: "未着手", note: "通常の20%OFF等" },
-    ],
-  },
-  {
-    period: "5月〜",
-    theme: "グランドオープン",
-    tasks: [
-      { task: "正規料金設定", assignee: "稲福", status: "未着手", note: "平日12,500/休前日15,500" },
-      { task: "Gear Shed外部貸出開始", assignee: "稲福", status: "未着手" },
-      { task: "えんがわ連携告知", assignee: "稲福", status: "未着手" },
-      { task: "月次稼働率モニタリング", assignee: "稲福", status: "未着手", note: "目標: 5月50%（GW効果）" },
+      { task: "正規料金設定・本格運営開始", assignee: "稲福", status: "未着手", note: "平日12,500/休前日15,500" },
     ],
   },
 ];

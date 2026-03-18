@@ -54,13 +54,13 @@ export function OverviewTab() {
         <StatCard
           label="損益分岐点"
           value="月8泊"
-          sub="稼働率 26%"
+          sub="稼働率 26% で現賃貸超え"
           color="emerald"
         />
         <StatCard
-          label="標準月売上"
-          value="¥197,500"
-          sub="稼働率 35%"
+          label="標準オーナー手取り"
+          value="¥118,625/月"
+          sub="稼働率 35% 時"
           color="amber"
         />
       </div>
@@ -156,31 +156,24 @@ export function OverviewTab() {
           </div>
         </div>
 
-        {/* Revenue Share */}
+        {/* Revenue Structure */}
         <div className="bg-white rounded-2xl border border-stone-200 p-5">
           <h3 className="font-bold text-stone-800 mb-4 flex items-center gap-2">
-            <span>💰</span> レベニューシェア
+            <span>💰</span> 経費構造
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
               <span className="text-sm text-stone-600">宿泊料金</span>
               <div className="flex gap-3 text-sm">
                 <span className="text-stone-800 font-medium">オーナー 65%</span>
-                <span className="text-orange-600 font-medium">稲福 35%</span>
+                <span className="text-stone-400">運営委託 35%</span>
               </div>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
               <span className="text-sm text-stone-600">ギアレンタル</span>
               <div className="flex gap-3 text-sm">
                 <span className="text-stone-800 font-medium">オーナー 65%</span>
-                <span className="text-orange-600 font-medium">稲福 35%</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50">
-              <span className="text-sm text-stone-600">体験プログラム</span>
-              <div className="flex gap-3 text-sm">
-                <span className="text-stone-800 font-medium">オーナー 85%</span>
-                <span className="text-orange-600 font-medium">稲福 15%</span>
+                <span className="text-stone-400">運営委託 35%</span>
               </div>
             </div>
           </div>
@@ -229,12 +222,12 @@ export function OverviewTab() {
         <h3 className="font-bold text-stone-800 mb-4 flex items-center gap-2">
           <span>🧭</span> コンセプト＆方針
         </h3>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <ConceptCard
             title="泊まれる道具箱"
             items={[
               "無骨だけど親切なインダストリアル空間",
-              "Snow Peak / Balmuda / Anker等のハイスペックギア",
+              "Snow Peak / Barebones等のハイスペックギア",
               "「未完成さ」を楽しむDIY感",
             ]}
             color="orange"
@@ -247,15 +240,6 @@ export function OverviewTab() {
               "「丁寧な暮らし」への憧れ",
             ]}
             color="sky"
-          />
-          <ConceptCard
-            title="えんがわ連携"
-            items={[
-              "Basecamp（動） x Engawa（静）",
-              "2泊3日セットプラン",
-              "満室時相互送客で機会損失ゼロ",
-            ]}
-            color="emerald"
           />
         </div>
       </div>
