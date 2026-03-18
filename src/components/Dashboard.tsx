@@ -8,13 +8,17 @@ import { TasksTab } from "./tabs/TasksTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { RevenueTab } from "./tabs/RevenueTab";
 import { ScheduleTab } from "./tabs/ScheduleTab";
+import { GearTab } from "./tabs/GearTab";
+import { SitePhotosTab } from "./tabs/SitePhotosTab";
 
-type Tab = "overview" | "timeline" | "tasks" | "documents" | "revenue" | "schedule";
+type Tab = "overview" | "timeline" | "tasks" | "gear" | "documents" | "revenue" | "schedule" | "photos";
 
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "概要", icon: "📊" },
   { id: "timeline", label: "タイムライン", icon: "📅" },
   { id: "tasks", label: "タスク", icon: "✅" },
+  { id: "gear", label: "ギア管理", icon: "🛠️" },
+  { id: "photos", label: "現場共有", icon: "📷" },
   { id: "documents", label: "資料", icon: "📁" },
   { id: "revenue", label: "収支計画", icon: "💰" },
   { id: "schedule", label: "購入スケジュール", icon: "🛒" },
@@ -86,6 +90,8 @@ export function Dashboard() {
         {activeTab === "overview" && <OverviewTab />}
         {activeTab === "timeline" && <TimelineTab />}
         {activeTab === "tasks" && <TasksTab />}
+        {activeTab === "gear" && <GearTab />}
+        {activeTab === "photos" && <SitePhotosTab />}
         {activeTab === "documents" && <DocumentsTab />}
         {activeTab === "revenue" && <RevenueTab />}
         {activeTab === "schedule" && <ScheduleTab />}
