@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken, getSessionCookie } from "@/lib/session";
 
-const passwords: Record<string, string | undefined> = {
-  takagi: process.env.PORTAL_PASSWORD_OWNER,
-  ryo: process.env.PORTAL_PASSWORD_PM,
-};
+function getPassword(memberId: string): string | undefined {
+  if (memberId === "takagi") return process.env.PORTAL_PASSWORD_OWNER;
+  if (memberId === "ryo") return process.env.PORTAL_PASSWORD_PM;
+  return undefined;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const expected = passwords[memberId];
+    const expected = getPassword(memberId);
     if (!expected || password !== expected) {
       return NextResponse.json(
         { error: "パスワードが正しくありません" },
