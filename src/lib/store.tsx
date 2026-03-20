@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { type Task } from "./data";
+import { useAuth } from "./auth";
 
 interface StoreState {
   tasks: Task[];
@@ -59,6 +60,7 @@ function recalcParents(tasks: Task[]): Task[] {
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
@@ -82,9 +84,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Fetch tasks when user logs in
   useEffect(() => {
-    fetchFromAPI();
-  }, [fetchFromAPI]);
+    if (user) {
+      fetchFromAPI();
+    } else {
+      setTasks([]);
+      setTasksLoading(false);
+    }
+  }, [user, fetchFromAPI]);
 
   const refreshTasks = useCallback(() => {
     fetchFromAPI();
