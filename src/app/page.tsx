@@ -6,34 +6,48 @@ import { members } from "@/lib/data";
 import { Dashboard } from "@/components/Dashboard";
 
 export default function Home() {
-  const { user, login } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-orange-400 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-stone-500">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (user) {
     return <Dashboard />;
   }
 
-  return <LoginPage onLogin={login} />;
+  return <LoginPage />;
 }
 
-function LoginPage({
-  onLogin,
-}: {
-  onLogin: (id: string, pw: string) => boolean;
-}) {
+function LoginPage() {
+  const { login } = useAuth();
   const [selectedMember, setSelectedMember] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!selectedMember) {
       setError("メンバーを選択してください");
       return;
     }
-    const success = onLogin(selectedMember, password);
-    if (!success) {
-      setError("パスワードが正しくありません");
+    setSubmitting(true);
+    try {
+      const success = await login(selectedMember, password);
+      if (!success) {
+        setError("パスワードが正しくありません");
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -100,9 +114,10 @@ function LoginPage({
 
           <button
             type="submit"
-            className="w-full py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition-colors"
+            disabled={submitting}
+            className="w-full py-3 bg-stone-800 text-white rounded-xl font-medium hover:bg-stone-700 transition-colors disabled:opacity-50"
           >
-            ログイン
+            {submitting ? "ログイン中..." : "ログイン"}
           </button>
         </form>
 

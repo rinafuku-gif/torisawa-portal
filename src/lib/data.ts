@@ -7,7 +7,6 @@ export interface Member {
   name: string;
   role: Role;
   roleLabel: string;
-  password: string;
   avatar: string;
 }
 
@@ -43,7 +42,6 @@ export const members: Member[] = [
     name: "高木",
     role: "owner",
     roleLabel: "オーナー",
-    password: "tori2026",
     avatar: "🏠",
   },
   {
@@ -51,7 +49,6 @@ export const members: Member[] = [
     name: "稲福 良祐",
     role: "pm",
     roleLabel: "PM / 運営代行",
-    password: "tori2026pm",
     avatar: "☕",
   },
 ];

@@ -196,6 +196,11 @@ export async function seedTasksIfEmpty(): Promise<Task[]> {
   const existing = await fetchTasks();
   if (existing.length > 0) return existing;
 
+  // Double-check after short delay to prevent concurrent seed
+  await delay(500);
+  const recheck = await fetchTasks();
+  if (recheck.length > 0) return recheck;
+
   // Separate parents and children
   const parents = defaultTasks.filter((t) => !t.parentId);
   const children = defaultTasks.filter((t) => t.parentId);
@@ -343,8 +348,13 @@ export async function seedGearIfEmpty(): Promise<GearItem[]> {
   const existing = await fetchGear();
   if (existing.length > 0) return existing;
 
+  // Double-check after short delay to prevent concurrent seed
+  await delay(500);
+  const recheck = await fetchGear();
+  if (recheck.length > 0) return recheck;
+
   for (const item of defaultGearItems) {
-    const { id: _oldId, comments: _comments, ...rest } = item;
+    const { id: _oldId, ...rest } = item;
     await createGearItem(rest);
     await delay(350);
   }

@@ -15,9 +15,14 @@ function loadPhotos(): SitePhoto[] {
   return [];
 }
 
-function savePhotos(photos: SitePhoto[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(photos));
+function savePhotos(photos: SitePhoto[]): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    localStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(photos));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function SitePhotosTab() {
@@ -29,6 +34,7 @@ export function SitePhotosTab() {
   const [category, setCategory] = useState(photoCategories[0]);
   const [viewPhoto, setViewPhoto] = useState<SitePhoto | null>(null);
   const [catFilter, setCatFilter] = useState("all");
+  const [storageWarning, setStorageWarning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Auto-save
@@ -37,7 +43,10 @@ export function SitePhotosTab() {
       initialized.current = true;
       return;
     }
-    savePhotos(photos);
+    const ok = savePhotos(photos);
+    if (!ok) {
+      setStorageWarning(true);
+    }
   }, [photos]);
 
   async function handleUpload() {
@@ -77,6 +86,12 @@ export function SitePhotosTab() {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-stone-800">現場共有</h2>
+
+      {storageWarning && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
+          ブラウザの保存容量がいっぱいです。古い写真を削除するか、Google Driveにバックアップしてください。
+        </div>
+      )}
 
       {/* Upload Form */}
       <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">

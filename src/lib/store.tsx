@@ -164,19 +164,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : target.status === "in-progress"
             ? "done"
             : "todo";
-        // Fire off the API call (non-blocking)
+
+        // Optimistic update + rollback on failure
         fetch(`/api/tasks/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: nextStatus }),
-        }).catch((e) => console.error("Failed to toggle task:", e));
+        }).catch((e) => {
+          console.error("Failed to toggle task:", e);
+          setTasksError("タスクの更新に失敗しました。再読み込みしてください");
+          fetchFromAPI();
+        });
 
         return recalcParents(
           prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
         );
       });
     },
-    []
+    [fetchFromAPI]
   );
 
   const getChildTasks = useCallback(

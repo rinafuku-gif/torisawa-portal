@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import {
   type GearItem,
-  type GearComment,
   type GearStatus,
   type GearPriority,
   gearStatuses,
@@ -257,13 +256,8 @@ export function GearTab() {
                       <GearRow
                         key={item.id}
                         item={item}
-                        userName={user.name}
                         onStatusChange={(s) => updateItem(item.id, { status: s })}
                         onEdit={() => setEditingId(item.id)}
-                        onAddComment={(text) => {
-                          const comment: GearComment = { id: `c_${Date.now()}`, text, by: user.name, at: new Date().toISOString() };
-                          updateItem(item.id, { comments: [...(item.comments || []), comment] });
-                        }}
                       />
                     )
                   )}
@@ -278,123 +272,67 @@ export function GearTab() {
 
 function GearRow({
   item,
-  userName,
   onStatusChange,
   onEdit,
-  onAddComment,
 }: {
   item: GearItem;
-  userName: string;
   onStatusChange: (s: GearStatus) => void;
   onEdit: () => void;
-  onAddComment: (text: string) => void;
 }) {
-  const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const statusStyle = gearStatuses.find((s) => s.value === item.status) || gearStatuses[0];
   const isSelecting = item.status === "選定中";
-  const comments = item.comments || [];
-
-  function handleAddComment() {
-    if (!commentText.trim()) return;
-    onAddComment(commentText.trim());
-    setCommentText("");
-  }
 
   return (
-    <div>
-      <div className={`px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group ${isSelecting ? "bg-purple-50/50" : ""}`}>
-        <select
-          value={item.status}
-          onChange={(e) => onStatusChange(e.target.value as GearStatus)}
-          className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all border-0 cursor-pointer ${statusStyle.color}`}
-        >
-          {gearStatuses.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${isSelecting ? "text-purple-800" : "text-stone-800"}`}>{item.name}</span>
-            {isSelecting && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 text-purple-700 font-medium">稲福が選定中 - 発注不可</span>
-            )}
-          </div>
-          <div className="text-xs text-stone-500 mt-0.5">
-            {item.product}
-            {item.note && <span className="ml-2 text-stone-400">({item.note})</span>}
-          </div>
-        </div>
-        <div className="text-right shrink-0 hidden sm:block">
-          <div className="text-sm font-medium text-stone-700">
-            ¥{(item.price * item.quantity).toLocaleString()}
-          </div>
-          <div className="text-xs text-stone-400">
-            {item.quantity > 1 && `¥${item.price.toLocaleString()} x ${item.quantity}`}
-          </div>
-        </div>
-        {item.shopUrl && !isSelecting && (
-          <a
-            href={item.shopUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded-lg hover:bg-orange-50 transition-all shrink-0"
-            title="購入リンク"
-          >
-            🛒
-          </a>
-        )}
-        {item.shopUrl && isSelecting && (
-          <span className="text-xs text-stone-300 px-2 py-1 shrink-0 cursor-not-allowed" title="選定中のため発注できません">🛒</span>
-        )}
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className={`text-xs px-2 py-1 rounded-lg transition-all shrink-0 ${
-            comments.length > 0
-              ? "text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-              : "opacity-0 group-hover:opacity-100 text-stone-400 hover:text-stone-600 hover:bg-stone-100"
-          }`}
-        >
-          💬{comments.length > 0 && ` ${comments.length}`}
-        </button>
-        <button
-          onClick={onEdit}
-          className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all shrink-0"
-        >
-          編集
-        </button>
-      </div>
-      {/* Comments */}
-      {showComments && (
-        <div className="px-5 pb-3 bg-stone-50 border-t border-stone-100">
-          {comments.length > 0 && (
-            <div className="space-y-1.5 pt-2 pb-2">
-              {comments.map((c) => (
-                <div key={c.id} className="text-xs">
-                  <span className="font-medium text-stone-700">{c.by}</span>
-                  <span className="text-stone-400 ml-1.5">{new Date(c.at).toLocaleDateString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                  <p className="text-stone-600 mt-0.5">{c.text}</p>
-                </div>
-              ))}
-            </div>
+    <div className={`px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group ${isSelecting ? "bg-purple-50/50" : ""}`}>
+      <select
+        value={item.status}
+        onChange={(e) => onStatusChange(e.target.value as GearStatus)}
+        className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 transition-all border-0 cursor-pointer ${statusStyle.color}`}
+      >
+        {gearStatuses.map((s) => (
+          <option key={s.value} value={s.value}>{s.label}</option>
+        ))}
+      </select>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-medium ${isSelecting ? "text-purple-800" : "text-stone-800"}`}>{item.name}</span>
+          {isSelecting && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 text-purple-700 font-medium">稲福が選定中 - 発注不可</span>
           )}
-          <div className="flex gap-2 pt-1">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddComment(); }}
-              placeholder="コメントを入力..."
-              className="flex-1 px-3 py-1.5 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-orange-400"
-            />
-            <button
-              onClick={handleAddComment}
-              className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium shrink-0"
-            >
-              送信
-            </button>
-          </div>
         </div>
+        <div className="text-xs text-stone-500 mt-0.5">
+          {item.product}
+          {item.note && <span className="ml-2 text-stone-400">({item.note})</span>}
+        </div>
+      </div>
+      <div className="text-right shrink-0 hidden sm:block">
+        <div className="text-sm font-medium text-stone-700">
+          ¥{(item.price * item.quantity).toLocaleString()}
+        </div>
+        <div className="text-xs text-stone-400">
+          {item.quantity > 1 && `¥${item.price.toLocaleString()} x ${item.quantity}`}
+        </div>
+      </div>
+      {item.shopUrl && !isSelecting && (
+        <a
+          href={item.shopUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-orange-500 hover:text-orange-700 px-2 py-1 rounded-lg hover:bg-orange-50 transition-all shrink-0"
+          title="購入リンク"
+        >
+          🛒
+        </a>
       )}
+      {item.shopUrl && isSelecting && (
+        <span className="text-xs text-stone-300 px-2 py-1 shrink-0 cursor-not-allowed" title="選定中のため発注できません">🛒</span>
+      )}
+      <button
+        onClick={onEdit}
+        className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all shrink-0"
+      >
+        編集
+      </button>
     </div>
   );
 }

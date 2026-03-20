@@ -125,7 +125,7 @@ export function RevenueTab() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-stone-400 mt-3">※ オーナー手取り = 売上 × 65%（運営委託費35%控除後）</p>
+        <p className="text-xs text-stone-400 mt-3">※ オーナー手取り = 売上 × 65%（運営委託費35%控除後）。繁忙期は休前日料金（¥15,500〜¥16,000/泊）で試算</p>
       </div>
 
       {/* Seasonal Strategy */}

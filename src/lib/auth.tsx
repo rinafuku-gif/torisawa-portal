@@ -11,46 +11,63 @@ import { members, type Member } from "./data";
 
 interface AuthContextType {
   user: Member | null;
-  login: (memberId: string, password: string) => boolean;
+  loading: boolean;
+  login: (memberId: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: () => false,
+  loading: true,
+  login: async () => false,
   logout: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Check existing session on mount
   useEffect(() => {
-    const stored = localStorage.getItem("torisawa-portal-user");
-    if (stored) {
-      const found = members.find((m) => m.id === stored);
-      if (found) setUser(found);
-    }
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.userId) {
+          const found = members.find((m) => m.id === data.userId);
+          if (found) setUser(found);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  function login(memberId: string, password: string): boolean {
-    const member = members.find(
-      (m) => m.id === memberId && m.password === password
-    );
-    if (member) {
-      setUser(member);
-      localStorage.setItem("torisawa-portal-user", member.id);
-      return true;
+  async function login(memberId: string, password: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId, password }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const found = members.find((m) => m.id === data.userId);
+      if (found) {
+        setUser(found);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   function logout() {
     setUser(null);
-    localStorage.removeItem("torisawa-portal-user");
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

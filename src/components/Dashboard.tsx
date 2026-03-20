@@ -62,9 +62,9 @@ export function Dashboard() {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="bg-white border-b border-stone-200 sticky top-14 z-40 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-1">
+      <nav className="bg-white border-b border-stone-200 sticky top-14 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -80,6 +80,8 @@ export function Dashboard() {
               </button>
             ))}
           </div>
+          {/* Scroll hint for mobile */}
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none sm:hidden" />
         </div>
       </nav>
 

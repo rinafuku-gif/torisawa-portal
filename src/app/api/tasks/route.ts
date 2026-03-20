@@ -12,10 +12,33 @@ export async function GET(req: NextRequest) {
   }
 }
 
+const VALID_STATUSES = ["todo", "in-progress", "done", "blocked"];
+const VALID_PRIORITIES = ["high", "medium", "low"];
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const task = await createTask(body);
+
+    // Input validation
+    if (!body.title || typeof body.title !== "string" || body.title.length > 200) {
+      return NextResponse.json({ error: "タスク名が不正です（200文字以内）" }, { status: 400 });
+    }
+    if (body.status && !VALID_STATUSES.includes(body.status)) {
+      return NextResponse.json({ error: "ステータスが不正です" }, { status: 400 });
+    }
+    if (body.priority && !VALID_PRIORITIES.includes(body.priority)) {
+      return NextResponse.json({ error: "優先度が不正です" }, { status: 400 });
+    }
+
+    const task = await createTask({
+      title: body.title.trim(),
+      status: body.status || "todo",
+      priority: body.priority || "medium",
+      assignee: body.assignee || "ryo",
+      startDate: body.startDate || undefined,
+      dueDate: body.dueDate || undefined,
+      parentId: body.parentId || undefined,
+    });
     return NextResponse.json(task, { status: 201 });
   } catch (e) {
     console.error("POST /api/tasks error:", e);

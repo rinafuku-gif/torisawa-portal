@@ -1,13 +1,6 @@
 export type GearStatus = "選定中" | "未発注" | "発注済" | "到着済" | "設置済";
 export type GearPriority = "必須" | "推奨" | "あれば◎" | "検討中";
 
-export interface GearComment {
-  id: string;
-  text: string;
-  by: string;
-  at: string;
-}
-
 export interface GearItem {
   id: string;
   category: string;
@@ -19,7 +12,6 @@ export interface GearItem {
   priority: GearPriority;
   note: string;
   shopUrl?: string;
-  comments?: GearComment[];
 }
 
 export interface SitePhoto {
