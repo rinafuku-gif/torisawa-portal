@@ -38,6 +38,18 @@ const statusColorsParent: Record<string, string> = {
 
 export function GanttTab() {
   const store = useStore();
+
+  if (store.tasksLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-orange-400 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-stone-500">ガントチャートを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   const parentTasks = store.getParentTasks();
 
   const totalDays = daysBetween(PROJECT_START, PROJECT_END);

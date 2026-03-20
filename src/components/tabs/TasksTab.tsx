@@ -23,7 +23,7 @@ export function TasksTab() {
   const store = useStore();
   const [filter, setFilter] = useState<"all" | "mine">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(() => new Set(
     store.getParentTasks().filter((p) => p.status !== "done").map((p) => p.id)
   ));
   const [showAddParent, setShowAddParent] = useState(false);
@@ -31,6 +31,28 @@ export function TasksTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   if (!user) return null;
+
+  if (store.tasksLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-orange-400 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-stone-500">タスクを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (store.tasksError) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-rose-500 mb-3">{store.tasksError}</p>
+        <button onClick={store.refreshTasks} className="text-sm px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+          再読み込み
+        </button>
+      </div>
+    );
+  }
 
   const parentTasks = store.getParentTasks();
 

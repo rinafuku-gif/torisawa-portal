@@ -65,11 +65,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
 
-  const fetchFromAPI = useCallback(async () => {
+  const fetchFromAPI = useCallback(async (retry = 0) => {
     setTasksLoading(true);
     setTasksError(null);
     try {
       const res = await fetch("/api/tasks?seed=true");
+      if (res.status === 401 && retry < 2) {
+        // Cookie may not be set yet, retry after delay
+        await new Promise((r) => setTimeout(r, 500));
+        return fetchFromAPI(retry + 1);
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "タスクの取得に失敗しました");
