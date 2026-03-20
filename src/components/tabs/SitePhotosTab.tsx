@@ -1,102 +1,139 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
-import { type SitePhoto, photoCategories } from "@/lib/gear-types";
+import { photoCategories } from "@/lib/gear-types";
 
-const PHOTOS_STORAGE_KEY = "torisawa-photos-data";
-
-function loadPhotos(): SitePhoto[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(PHOTOS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return [];
-}
-
-function savePhotos(photos: SitePhoto[]): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    localStorage.setItem(PHOTOS_STORAGE_KEY, JSON.stringify(photos));
-    return true;
-  } catch {
-    return false;
-  }
+interface Photo {
+  id: string;
+  blobUrl: string;
+  caption: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  category: string;
 }
 
 export function SitePhotosTab() {
   const { user } = useAuth();
-  const [photos, setPhotos] = useState<SitePhoto[]>(() => loadPhotos());
-  const initialized = useRef(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState(photoCategories[0]);
-  const [viewPhoto, setViewPhoto] = useState<SitePhoto | null>(null);
+  const [viewPhoto, setViewPhoto] = useState<Photo | null>(null);
   const [catFilter, setCatFilter] = useState("all");
-  const [storageWarning, setStorageWarning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Auto-save
+  const fetchPhotos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/photos");
+      if (!res.ok) throw new Error("取得に失敗しました");
+      const data: Photo[] = await res.json();
+      setPhotos(data);
+    } catch (e) {
+      console.error("Failed to fetch photos:", e);
+      setError(e instanceof Error ? e.message : "写真の取得に失敗しました");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      return;
-    }
-    const ok = savePhotos(photos);
-    if (!ok) {
-      setStorageWarning(true);
-    }
-  }, [photos]);
+    fetchPhotos();
+  }, [fetchPhotos]);
 
   async function handleUpload() {
     const file = fileRef.current?.files?.[0];
     if (!file || !user) return;
 
     setUploading(true);
+    setError(null);
     try {
-      const dataUrl = await compressImageToDataUrl(file, 800, 0.6);
-      const photo: SitePhoto = {
-        id: `photo_${Date.now()}`,
-        url: dataUrl,
-        caption,
-        uploadedBy: user.name,
-        uploadedAt: new Date().toISOString(),
-        category,
-      };
+      // Compress before upload
+      const compressed = await compressImage(file, 1200, 0.75);
+
+      const formData = new FormData();
+      formData.append("file", compressed, `photo_${Date.now()}.jpg`);
+      formData.append("caption", caption);
+      formData.append("category", category);
+      formData.append("uploadedBy", user.name);
+
+      const res = await fetch("/api/photos", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "アップロードに失敗しました");
+      }
+
+      const photo: Photo = await res.json();
       setPhotos((prev) => [photo, ...prev]);
       setCaption("");
       if (fileRef.current) fileRef.current.value = "";
     } catch (e) {
       console.error("Upload failed:", e);
+      setError(e instanceof Error ? e.message : "アップロードに失敗しました");
     } finally {
       setUploading(false);
     }
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     setPhotos((prev) => prev.filter((p) => p.id !== id));
     setViewPhoto(null);
+    try {
+      const res = await fetch("/api/photos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("削除に失敗");
+    } catch (e) {
+      console.error("Delete failed:", e);
+      setError("削除に失敗しました");
+      fetchPhotos();
+    }
   }
 
   if (!user) return null;
 
-  const filtered = catFilter === "all" ? photos : photos.filter((p) => p.category === catFilter);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-orange-400 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-stone-500">写真を読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filtered =
+    catFilter === "all"
+      ? photos
+      : photos.filter((p) => p.category === catFilter);
 
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-stone-800">現場共有</h2>
 
-      {storageWarning && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
-          ブラウザの保存容量がいっぱいです。古い写真を削除するか、Google Driveにバックアップしてください。
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-2 rounded-lg">
+          {error}
         </div>
       )}
 
       {/* Upload Form */}
       <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-4">
         <h3 className="font-bold text-stone-800 text-sm">写真をアップロード</h3>
-        <p className="text-xs text-stone-400">※ 写真はブラウザに保存されます（端末ごと）。大事な写真はGoogle Driveにもバックアップしてください</p>
+        <p className="text-xs text-stone-400">
+          写真はサーバーに保存されるため、どの端末からでも閲覧できます
+        </p>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <input
@@ -113,7 +150,9 @@ export function SitePhotosTab() {
               className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm bg-white"
             >
               {photoCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </select>
           </div>
@@ -129,7 +168,7 @@ export function SitePhotosTab() {
               disabled={uploading}
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm disabled:opacity-50"
             >
-              {uploading ? "処理中..." : "アップロード"}
+              {uploading ? "アップロード中..." : "アップロード"}
             </button>
           </div>
         </div>
@@ -140,7 +179,9 @@ export function SitePhotosTab() {
         <button
           onClick={() => setCatFilter("all")}
           className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-            catFilter === "all" ? "bg-stone-800 text-white" : "bg-white border border-stone-200 text-stone-600"
+            catFilter === "all"
+              ? "bg-stone-800 text-white"
+              : "bg-white border border-stone-200 text-stone-600"
           }`}
         >
           全て ({photos.length})
@@ -153,7 +194,9 @@ export function SitePhotosTab() {
               key={c}
               onClick={() => setCatFilter(catFilter === c ? "all" : c)}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
-                catFilter === c ? "bg-stone-800 text-white" : "bg-white border border-stone-200 text-stone-600"
+                catFilter === c
+                  ? "bg-stone-800 text-white"
+                  : "bg-white border border-stone-200 text-stone-600"
               }`}
             >
               {c} ({count})
@@ -165,7 +208,9 @@ export function SitePhotosTab() {
       {/* Photo Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-stone-400">
-          {photos.length === 0 ? "まだ写真がありません。現場の状況を撮影してアップロードしましょう！" : "該当する写真がありません"}
+          {photos.length === 0
+            ? "まだ写真がありません。現場の状況を撮影してアップロードしましょう！"
+            : "該当する写真がありません"}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -178,7 +223,7 @@ export function SitePhotosTab() {
               <div className="aspect-[4/3] bg-stone-100 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photo.url}
+                  src={photo.blobUrl}
                   alt={photo.caption}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />
@@ -188,9 +233,14 @@ export function SitePhotosTab() {
                   {photo.caption || "（キャプションなし）"}
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-orange-600">{photo.category}</span>
+                  <span className="text-xs text-orange-600">
+                    {photo.category}
+                  </span>
                   <span className="text-xs text-stone-400">
-                    {new Date(photo.uploadedAt).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}
+                    {new Date(photo.uploadedAt).toLocaleDateString("ja-JP", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </span>
                 </div>
               </div>
@@ -202,13 +252,20 @@ export function SitePhotosTab() {
       {/* Photo Viewer Modal */}
       {viewPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setViewPhoto(null)} />
+          <div
+            className="fixed inset-0 bg-black/60"
+            onClick={() => setViewPhoto(null)}
+          />
           <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-stone-200 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-stone-800">{viewPhoto.caption || "写真"}</h3>
+                <h3 className="font-bold text-stone-800">
+                  {viewPhoto.caption || "写真"}
+                </h3>
                 <div className="text-xs text-stone-500 mt-0.5">
-                  {viewPhoto.uploadedBy} / {new Date(viewPhoto.uploadedAt).toLocaleString("ja-JP")} / {viewPhoto.category}
+                  {viewPhoto.uploadedBy} /{" "}
+                  {new Date(viewPhoto.uploadedAt).toLocaleString("ja-JP")} /{" "}
+                  {viewPhoto.category}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -222,14 +279,28 @@ export function SitePhotosTab() {
                   onClick={() => setViewPhoto(null)}
                   className="text-stone-400 hover:text-stone-600 p-2 hover:bg-stone-100 rounded-lg"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={viewPhoto.url} alt={viewPhoto.caption} className="w-full" />
+            <img
+              src={viewPhoto.blobUrl}
+              alt={viewPhoto.caption}
+              className="w-full"
+            />
           </div>
         </div>
       )}
@@ -237,7 +308,11 @@ export function SitePhotosTab() {
   );
 }
 
-async function compressImageToDataUrl(file: File, maxWidth: number, quality: number): Promise<string> {
+async function compressImage(
+  file: File,
+  maxWidth: number,
+  quality: number
+): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -252,7 +327,11 @@ async function compressImageToDataUrl(file: File, maxWidth: number, quality: num
       canvas.height = h;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", quality));
+      canvas.toBlob(
+        (blob) => resolve(blob!),
+        "image/jpeg",
+        quality
+      );
     };
     img.src = URL.createObjectURL(file);
   });

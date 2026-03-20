@@ -14,15 +14,6 @@ export interface GearItem {
   shopUrl?: string;
 }
 
-export interface SitePhoto {
-  id: string;
-  url: string;
-  caption: string;
-  uploadedBy: string;
-  uploadedAt: string;
-  category: string;
-}
-
 export const gearStatuses: { value: GearStatus; label: string; color: string }[] = [
   { value: "選定中", label: "選定中", color: "bg-purple-100 text-purple-700" },
   { value: "未発注", label: "未発注", color: "bg-stone-100 text-stone-600" },
