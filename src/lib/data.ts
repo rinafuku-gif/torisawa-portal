@@ -61,8 +61,8 @@ export const defaultTasks: Task[] = [
   { id: "p1-1", title: "消防適合通知書の受領確認", status: "in-progress", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-31", parentId: "p1" },
   { id: "p1-2", title: "事業系一般廃棄物処理契約", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-31", parentId: "p1" },
   { id: "p1-3", title: "簡易宿所営業許可申請", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p1" },
-  { id: "p1-4", title: "宿泊者名簿フォーマット準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-15", parentId: "p1" },
-  { id: "p1-5", title: "保健所立入検査", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-20", parentId: "p1" },
+  { id: "p1-4", title: "宿泊者名簿フォーマット準備（遠隔可・検査前必須）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-18", parentId: "p1" },
+  { id: "p1-5", title: "保健所立入検査", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p1" },
 
   // Phase 2: 購入・発注
   { id: "p2", title: "Phase 2: 購入・発注", status: "in-progress", priority: "high", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-04-06" },
@@ -87,17 +87,17 @@ export const defaultTasks: Task[] = [
   { id: "p4-5", title: "タブレット設定", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-19", parentId: "p4" },
   { id: "p4-6", title: "2階寝室エアコン設置交渉", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p4" },
 
-  // Phase 5: 運営準備 ※現場確認は4/19まで、ドキュメント作成は遠隔可
-  { id: "p5", title: "Phase 5: 運営準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-19" },
-  { id: "p5-1", title: "ハウスルール作成（日/英）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
-  { id: "p5-2", title: "ギアレンタル規約作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
-  { id: "p5-3", title: "周辺情報ガイド作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p5" },
+  // Phase 5: 運営準備 ※現場作業は4/19まで、ドキュメント系は帰省中(4/20-27)に遠隔対応
+  { id: "p5", title: "Phase 5: 運営準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-27" },
+  { id: "p5-1", title: "ハウスルール作成（日/英）（遠隔可）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-20", dueDate: "2026-04-25", parentId: "p5" },
+  { id: "p5-2", title: "ギアレンタル規約作成（遠隔可）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-20", dueDate: "2026-04-25", parentId: "p5" },
+  { id: "p5-3", title: "周辺情報ガイド作成（遠隔可）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-20", dueDate: "2026-04-25", parentId: "p5" },
   { id: "p5-4", title: "清掃オペレーション確立", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p5" },
   { id: "p5-5", title: "テスト宿泊（関係者）", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p5" },
 
-  // Phase 6: 集客・掲載 ※写真撮影は4/19まで現場、Airbnb登録は遠隔可（4/20-27帰省中に対応）
+  // Phase 6: 集客・掲載 ※写真撮影は4/19まで現場、掲載文・Airbnb登録は帰省中(4/20-27)に遠隔対応
   { id: "p6", title: "Phase 6: 集客・掲載", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-27" },
-  { id: "p6-1", title: "OTA掲載文作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p6" },
+  { id: "p6-1", title: "OTA掲載文作成（遠隔可）", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-20", dueDate: "2026-04-25", parentId: "p6" },
   { id: "p6-2", title: "写真撮影（現場作業）", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p6" },
   { id: "p6-3", title: "Airbnb登録・料金設定（遠隔可）", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-04-20", dueDate: "2026-04-27", parentId: "p6" },
 
