@@ -73,19 +73,19 @@ export const defaultTasks: Task[] = [
   { id: "p2-5", title: "DIY資材購入", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-17", dueDate: "2026-03-23", parentId: "p2" },
 
   // Phase 3: DIY施工 ※現場作業: 4/19までに完了必須
-  { id: "p3", title: "Phase 3: DIY施工", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-06" },
+  { id: "p3", title: "Phase 3: DIY施工", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-19" },
   { id: "p3-1", title: "有孔ボード設置・Gear Shed作成", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-03-30", parentId: "p3" },
   { id: "p3-2", title: "照明交換工事", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-03-30", parentId: "p3" },
-  { id: "p3-3", title: "塗装作業", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-06", parentId: "p3" },
+  { id: "p3-3", title: "塗装作業", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-24", dueDate: "2026-04-13", parentId: "p3" },
 
   // Phase 4: セットアップ ※現場作業: 4/19までに完了必須
-  { id: "p4", title: "Phase 4: セットアップ", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-13" },
+  { id: "p4", title: "Phase 4: セットアップ", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-19" },
   { id: "p4-1", title: "ギアディスプレイ配置", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
   { id: "p4-2", title: "キッチン・備品設置", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
-  { id: "p4-3", title: "スマートロック設置・テスト", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
-  { id: "p4-4", title: "Wi-Fi開通・速度確認", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-06", parentId: "p4" },
-  { id: "p4-5", title: "タブレット設定", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-13", parentId: "p4" },
-  { id: "p4-6", title: "2階寝室エアコン設置交渉", status: "todo", priority: "medium", assignee: "ryo", parentId: "p4" },
+  { id: "p4-3", title: "スマートロック設置・テスト", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-13", parentId: "p4" },
+  { id: "p4-4", title: "Wi-Fi開通・速度確認", status: "todo", priority: "high", assignee: "ryo", startDate: "2026-03-31", dueDate: "2026-04-13", parentId: "p4" },
+  { id: "p4-5", title: "タブレット設定", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-19", parentId: "p4" },
+  { id: "p4-6", title: "2階寝室エアコン設置交渉", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-14", dueDate: "2026-04-19", parentId: "p4" },
 
   // Phase 5: 運営準備 ※現場確認は4/19まで、ドキュメント作成は遠隔可
   { id: "p5", title: "Phase 5: 運営準備", status: "todo", priority: "medium", assignee: "ryo", startDate: "2026-04-07", dueDate: "2026-04-19" },
