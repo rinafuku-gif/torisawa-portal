@@ -179,6 +179,12 @@ function notionPageToTask(page: any): Task {
 
 export async function fetchTasks(): Promise<Task[]> {
   const pages = await queryDatabase(TASKS_DB, {
+    filter: {
+      property: "タグ",
+      multi_select: {
+        contains: "Basecamp Torisawa",
+      },
+    },
     sorts: [{ timestamp: "created_time", direction: "ascending" }],
   });
 
@@ -202,6 +208,7 @@ export async function createTask(task: Omit<Task, "id">): Promise<Task> {
     "GTD": { status: { name: statusToGtd[task.status] || "次にやること" } },
     "優先度": { select: { name: priorityToJa[task.priority] || "中" } },
     "担当者": { select: { name: assigneeToJa[task.assignee] || "稲福" } },
+    "タグ": { multi_select: [{ name: "Basecamp Torisawa" }] },
   };
 
   // 行動予定日: startとendを1つのdateプロパティで表現
