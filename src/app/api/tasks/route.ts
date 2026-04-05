@@ -30,6 +30,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "優先度が不正です" }, { status: 400 });
     }
 
+    const VALID_WORK_STYLES = ["online", "offline"];
+    if (body.workStyle && !VALID_WORK_STYLES.includes(body.workStyle)) {
+      return NextResponse.json({ error: "作業場所が不正です" }, { status: 400 });
+    }
+
     const task = await createTask({
       title: body.title.trim(),
       status: body.status || "todo",
@@ -38,6 +43,7 @@ export async function POST(req: NextRequest) {
       startDate: body.startDate || undefined,
       dueDate: body.dueDate || undefined,
       parentId: body.parentId || undefined,
+      workStyle: body.workStyle || undefined,
     });
     return NextResponse.json(task, { status: 201 });
   } catch (e) {

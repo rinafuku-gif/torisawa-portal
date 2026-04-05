@@ -19,6 +19,7 @@ export interface Task {
   startDate?: string; // YYYY-MM-DD
   dueDate?: string;   // YYYY-MM-DD
   parentId?: string;  // parent task ID (if child)
+  workStyle?: "online" | "offline"; // オンライン/オフライン
 }
 
 export interface RevenueScenario {

@@ -1,27 +1,28 @@
-import { Client } from "@notionhq/client";
 import type { Task } from "./data";
 import type { GearItem } from "./gear-types";
 import { defaultTasks } from "./data";
 import { defaultGearItems } from "./gear-types";
 
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
-
 const TASKS_DB = process.env.NOTION_TASKS_DB_ID!;
 const GEAR_DB = process.env.NOTION_GEAR_DB_ID!;
+const NOTION_API_KEY = process.env.NOTION_API_KEY!;
+const NOTION_VERSION = "2022-06-28";
 
 // ─── Status / Priority / Assignee Mappings ───
 
-const statusToJa: Record<string, string> = {
-  todo: "未着手",
-  "in-progress": "進行中",
-  done: "完了",
-  blocked: "ブロック",
-};
-const statusToEn: Record<string, Task["status"]> = {
-  "未着手": "todo",
+const gtdToStatus: Record<string, Task["status"]> = {
   "進行中": "in-progress",
   "完了": "done",
+  "次にやること": "todo",
+  "いつかやるかも": "todo",
+  "未着手": "todo",
   "ブロック": "blocked",
+};
+const statusToGtd: Record<Task["status"], string> = {
+  "todo": "次にやること",
+  "in-progress": "進行中",
+  "done": "完了",
+  "blocked": "ブロック",
 };
 
 const priorityToJa: Record<string, string> = {
@@ -44,40 +45,114 @@ const assigneeToEn: Record<string, string> = {
   "高木": "takagi",
 };
 
+const workStyleToEn: Record<string, Task["workStyle"]> = {
+  "オンライン": "online",
+  "オフライン": "offline",
+};
+const workStyleToJa: Record<string, string> = {
+  online: "オンライン",
+  offline: "オフライン",
+};
+
 // ─── Helpers ───
 
-function getPlainText(prop: { rich_text?: Array<{ plain_text: string }> } | undefined): string {
-  if (!prop || !("rich_text" in prop) || !prop.rich_text) return "";
-  return prop.rich_text.map((r) => r.plain_text).join("");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getPlainText(prop: any): string {
+  if (!prop || !prop.rich_text) return "";
+  return prop.rich_text.map((r: { plain_text: string }) => r.plain_text).join("");
 }
 
-function getTitle(prop: { title?: Array<{ plain_text: string }> } | undefined): string {
-  if (!prop || !("title" in prop) || !prop.title) return "";
-  return prop.title.map((t) => t.plain_text).join("");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getTitle(prop: any): string {
+  if (!prop || !prop.title) return "";
+  return prop.title.map((t: { plain_text: string }) => t.plain_text).join("");
 }
 
-function getSelect(prop: { select?: { name: string } | null } | undefined): string {
-  if (!prop || !("select" in prop) || !prop.select) return "";
-  return prop.select.name;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSelect(prop: any): string {
+  if (!prop || !prop.select) return "";
+  return prop.select.name ?? "";
 }
 
-function getNumber(prop: { number?: number | null } | undefined): number {
-  if (!prop || !("number" in prop) || prop.number == null) return 0;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStatus(prop: any): string {
+  // Notion "status" type has prop.status.name
+  if (!prop || !prop.status) return "";
+  return prop.status.name ?? "";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getNumber(prop: any): number {
+  if (!prop || prop.number == null) return 0;
   return prop.number;
 }
 
-function getDate(prop: { date?: { start?: string | null } | null } | undefined): string | undefined {
-  if (!prop || !("date" in prop) || !prop.date || !prop.date.start) return undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getDateStart(prop: any): string | undefined {
+  if (!prop || !prop.date || !prop.date.start) return undefined;
   return prop.date.start;
 }
 
-function getUrl(prop: { url?: string | null } | undefined): string | undefined {
-  if (!prop || !("url" in prop) || !prop.url) return undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getDateEnd(prop: any): string | undefined {
+  if (!prop || !prop.date || !prop.date.end) return undefined;
+  return prop.date.end;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getUrl(prop: any): string | undefined {
+  if (!prop || !prop.url) return undefined;
   return prop.url;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getRelationId(prop: any): string | undefined {
+  if (!prop || !prop.relation || prop.relation.length === 0) return undefined;
+  return prop.relation[0].id;
 }
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ─── Notion fetch helpers ───
+
+async function notionFetch(path: string, options: RequestInit = {}): Promise<unknown> {
+  const res = await fetch(`https://api.notion.com/v1${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${NOTION_API_KEY}`,
+      "Notion-Version": NOTION_VERSION,
+      "Content-Type": "application/json",
+      ...(options.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Notion API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+async function queryDatabase(
+  databaseId: string,
+  body: Record<string, unknown> = {}
+): Promise<unknown[]> {
+  const pages: unknown[] = [];
+  let startCursor: string | undefined = undefined;
+  do {
+    const reqBody: Record<string, unknown> = { page_size: 100, ...body };
+    if (startCursor) reqBody.start_cursor = startCursor;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = (await notionFetch(`/databases/${databaseId}/query`, {
+      method: "POST",
+      body: JSON.stringify(reqBody),
+    })) as any;
+    pages.push(...res.results);
+    startCursor = res.has_more ? res.next_cursor : undefined;
+  } while (startCursor);
+  return pages;
 }
 
 // ─── TASKS ───
@@ -85,34 +160,29 @@ function delay(ms: number) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function notionPageToTask(page: any): Task {
   const props = page.properties;
+  const gtdLabel = getStatus(props["GTD"]);
+  const workStyleJa = getSelect(props["対応場所"]);
+  const startDate = getDateStart(props["行動予定日"]);
+  const dueDate = getDateEnd(props["行動予定日"]);
   return {
     id: page.id,
     title: getTitle(props["タスク名"]),
-    status: statusToEn[getSelect(props["ステータス"])] || "todo",
+    status: gtdToStatus[gtdLabel] || "todo",
     priority: priorityToEn[getSelect(props["優先度"])] || "medium",
-    assignee: assigneeToEn[getSelect(props["担当"])] || "ryo",
-    startDate: getDate(props["開始日"]),
-    dueDate: getDate(props["期限"]),
-    parentId: getPlainText(props["親タスクID"]) || undefined,
+    assignee: assigneeToEn[getSelect(props["担当者"])] || "ryo",
+    startDate,
+    dueDate,
+    parentId: getRelationId(props["親アイテム"]),
+    workStyle: workStyleToEn[workStyleJa] || undefined,
   };
 }
 
 export async function fetchTasks(): Promise<Task[]> {
-  const pages = [];
-  let cursor: string | undefined = undefined;
-  do {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res: any = await notion.dataSources.query({
-      data_source_id: TASKS_DB,
-      start_cursor: cursor,
-      page_size: 100,
-      sorts: [{ timestamp: "created_time", direction: "ascending" }],
-    });
-    pages.push(...res.results);
-    cursor = res.has_more ? res.next_cursor : undefined;
-  } while (cursor);
+  const pages = await queryDatabase(TASKS_DB, {
+    sorts: [{ timestamp: "created_time", direction: "ascending" }],
+  });
 
-  const tasks = pages.map(notionPageToTask);
+  const tasks = (pages as unknown[]).map(notionPageToTask);
   // Ensure parent tasks come before their children
   const parents = tasks.filter((t) => !t.parentId);
   const result: Task[] = [];
@@ -129,25 +199,36 @@ export async function fetchTasks(): Promise<Task[]> {
 export async function createTask(task: Omit<Task, "id">): Promise<Task> {
   const properties: Record<string, unknown> = {
     "タスク名": { title: [{ text: { content: task.title } }] },
-    "ステータス": { select: { name: statusToJa[task.status] || "未着手" } },
+    "GTD": { status: { name: statusToGtd[task.status] || "次にやること" } },
     "優先度": { select: { name: priorityToJa[task.priority] || "中" } },
-    "担当": { select: { name: assigneeToJa[task.assignee] || "稲福" } },
+    "担当者": { select: { name: assigneeToJa[task.assignee] || "稲福" } },
   };
 
-  if (task.startDate) {
-    properties["開始日"] = { date: { start: task.startDate } };
-  }
-  if (task.dueDate) {
-    properties["期限"] = { date: { start: task.dueDate } };
-  }
-  if (task.parentId) {
-    properties["親タスクID"] = { rich_text: [{ text: { content: task.parentId } }] };
+  // 行動予定日: startとendを1つのdateプロパティで表現
+  if (task.startDate || task.dueDate) {
+    properties["行動予定日"] = {
+      date: {
+        start: task.startDate || task.dueDate,
+        ...(task.dueDate && task.startDate !== task.dueDate ? { end: task.dueDate } : {}),
+      },
+    };
   }
 
-  const page = await notion.pages.create({
-    parent: { data_source_id: TASKS_DB },
-    properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
-  });
+  if (task.parentId) {
+    properties["親アイテム"] = { relation: [{ id: task.parentId }] };
+  }
+  if (task.workStyle) {
+    properties["対応場所"] = { select: { name: workStyleToJa[task.workStyle] } };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const page = (await notionFetch("/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      parent: { database_id: TASKS_DB },
+      properties,
+    }),
+  })) as any;
 
   return notionPageToTask(page);
 }
@@ -159,36 +240,52 @@ export async function updateNotionTask(pageId: string, updates: Partial<Task>): 
     properties["タスク名"] = { title: [{ text: { content: updates.title } }] };
   }
   if (updates.status !== undefined) {
-    properties["ステータス"] = { select: { name: statusToJa[updates.status] || "未着手" } };
+    properties["GTD"] = { status: { name: statusToGtd[updates.status] || "次にやること" } };
   }
   if (updates.priority !== undefined) {
     properties["優先度"] = { select: { name: priorityToJa[updates.priority] || "中" } };
   }
   if (updates.assignee !== undefined) {
-    properties["担当"] = { select: { name: assigneeToJa[updates.assignee] || "稲福" } };
-  }
-  if (updates.startDate !== undefined) {
-    properties["開始日"] = updates.startDate ? { date: { start: updates.startDate } } : { date: null };
-  }
-  if (updates.dueDate !== undefined) {
-    properties["期限"] = updates.dueDate ? { date: { start: updates.dueDate } } : { date: null };
-  }
-  if (updates.parentId !== undefined) {
-    properties["親タスクID"] = updates.parentId
-      ? { rich_text: [{ text: { content: updates.parentId } }] }
-      : { rich_text: [] };
+    properties["担当者"] = { select: { name: assigneeToJa[updates.assignee] || "稲福" } };
   }
 
-  await notion.pages.update({
-    page_id: pageId,
-    properties: properties as Parameters<typeof notion.pages.update>[0]["properties"],
+  // 行動予定日: startDate or dueDateが更新された場合
+  if (updates.startDate !== undefined || updates.dueDate !== undefined) {
+    const start = updates.startDate;
+    const end = updates.dueDate;
+    if (!start && !end) {
+      properties["行動予定日"] = { date: null };
+    } else {
+      properties["行動予定日"] = {
+        date: {
+          start: start || end,
+          ...(end && start !== end ? { end } : {}),
+        },
+      };
+    }
+  }
+
+  if (updates.parentId !== undefined) {
+    properties["親アイテム"] = updates.parentId
+      ? { relation: [{ id: updates.parentId }] }
+      : { relation: [] };
+  }
+  if (updates.workStyle !== undefined) {
+    properties["対応場所"] = updates.workStyle
+      ? { select: { name: workStyleToJa[updates.workStyle] } }
+      : { select: null };
+  }
+
+  await notionFetch(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ properties }),
   });
 }
 
 export async function deleteNotionTask(pageId: string): Promise<void> {
-  await notion.pages.update({
-    page_id: pageId,
-    in_trash: true,
+  await notionFetch(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ in_trash: true }),
   });
 }
 
@@ -251,21 +348,11 @@ function notionPageToGear(page: any): GearItem {
 const gearCategoryOrder = ["家電", "寝具・家具", "キャンプギア", "DIY・内装", "備品", "防災設備"];
 
 export async function fetchGear(): Promise<GearItem[]> {
-  const pages = [];
-  let cursor: string | undefined = undefined;
-  do {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res: any = await notion.dataSources.query({
-      data_source_id: GEAR_DB,
-      start_cursor: cursor,
-      page_size: 100,
-      sorts: [{ timestamp: "created_time", direction: "ascending" }],
-    });
-    pages.push(...res.results);
-    cursor = res.has_more ? res.next_cursor : undefined;
-  } while (cursor);
+  const pages = await queryDatabase(GEAR_DB, {
+    sorts: [{ timestamp: "created_time", direction: "ascending" }],
+  });
 
-  const items = pages.map(notionPageToGear);
+  const items = (pages as unknown[]).map(notionPageToGear);
   // Sort by category order, then by creation order within each category
   items.sort((a, b) => {
     const catA = gearCategoryOrder.indexOf(a.category);
@@ -292,10 +379,14 @@ export async function createGearItem(item: Omit<GearItem, "id">): Promise<GearIt
     properties["購入リンク"] = { url: item.shopUrl };
   }
 
-  const page = await notion.pages.create({
-    parent: { data_source_id: GEAR_DB },
-    properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const page = (await notionFetch("/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      parent: { database_id: GEAR_DB },
+      properties,
+    }),
+  })) as any;
 
   return notionPageToGear(page);
 }
@@ -331,16 +422,16 @@ export async function updateNotionGearItem(pageId: string, updates: Partial<Gear
     properties["購入リンク"] = updates.shopUrl ? { url: updates.shopUrl } : { url: null };
   }
 
-  await notion.pages.update({
-    page_id: pageId,
-    properties: properties as Parameters<typeof notion.pages.update>[0]["properties"],
+  await notionFetch(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ properties }),
   });
 }
 
 export async function deleteNotionGearItem(pageId: string): Promise<void> {
-  await notion.pages.update({
-    page_id: pageId,
-    in_trash: true,
+  await notionFetch(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ in_trash: true }),
   });
 }
 

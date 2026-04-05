@@ -257,8 +257,17 @@ export function TasksTab() {
                         <div className={`text-sm font-medium ${t.status === "done" ? "line-through text-stone-400" : "text-stone-800"}`}>
                           {t.title}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className={`text-xs px-1.5 py-0.5 rounded ${status.bg} ${status.text}`}>{status.label}</span>
+                          {t.workStyle && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                              t.workStyle === "online"
+                                ? "bg-sky-100 text-sky-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}>
+                              {t.workStyle === "online" ? "オンライン" : "オフライン"}
+                            </span>
+                          )}
                           {t.startDate && t.dueDate && (
                             <span className="text-xs text-stone-400">{t.startDate.slice(5)} ~ {t.dueDate.slice(5)}</span>
                           )}
@@ -443,6 +452,7 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
   const [assignee, setAssignee] = useState(task.assignee);
   const [startDate, setStartDate] = useState(task.startDate || "");
   const [dueDate, setDueDate] = useState(task.dueDate || "");
+  const [workStyle, setWorkStyle] = useState<"online" | "offline" | "">(task.workStyle || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
@@ -472,6 +482,12 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
             className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs bg-white">
             {members.map((m) => <option key={m.id} value={m.id}>{m.avatar} {m.name}</option>)}
           </select>
+          <select value={workStyle} onChange={(e) => setWorkStyle(e.target.value as "online" | "offline" | "")}
+            className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs bg-white">
+            <option value="">場所: 未設定</option>
+            <option value="online">オンライン</option>
+            <option value="offline">オフライン</option>
+          </select>
         </div>
         <div className="flex gap-2">
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
@@ -495,7 +511,7 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
         <div className="flex gap-2">
           <button onClick={onCancel} className="text-xs px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-lg">キャンセル</button>
           <button
-            onClick={() => onSave({ title, status, priority, assignee, startDate: startDate || undefined, dueDate: dueDate || undefined })}
+            onClick={() => onSave({ title, status, priority, assignee, startDate: startDate || undefined, dueDate: dueDate || undefined, workStyle: workStyle || undefined })}
             className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium"
           >保存</button>
         </div>
