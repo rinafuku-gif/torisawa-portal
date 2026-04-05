@@ -11,18 +11,18 @@ const NOTION_VERSION = "2022-06-28";
 // ─── Status / Priority / Assignee Mappings ───
 
 const gtdToStatus: Record<string, Task["status"]> = {
-  "進行中": "in-progress",
-  "完了": "done",
+  "Inbox": "todo",
   "次にやること": "todo",
   "いつかやるかも": "todo",
   "未着手": "todo",
-  "ブロック": "blocked",
+  "進行中": "in-progress",
+  "完了": "done",
+  // "ブロック" は新DBに存在しないため除外
 };
 const statusToGtd: Record<Task["status"], string> = {
   "todo": "次にやること",
   "in-progress": "進行中",
   "done": "完了",
-  "blocked": "ブロック",
 };
 
 const priorityToJa: Record<string, string> = {

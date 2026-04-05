@@ -9,7 +9,6 @@ const statusConfig: Record<string, { label: string; bg: string; text: string }> 
   todo: { label: "未着手", bg: "bg-stone-100", text: "text-stone-600" },
   "in-progress": { label: "進行中", bg: "bg-orange-100", text: "text-orange-700" },
   done: { label: "完了", bg: "bg-emerald-100", text: "text-emerald-700" },
-  blocked: { label: "ブロック", bg: "bg-rose-100", text: "text-rose-700" },
 };
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
@@ -57,16 +56,27 @@ export function TasksTab() {
   const parentTasks = store.getParentTasks();
 
   // Filter logic
+  // 親タスク自身のステータス・担当者でフィルタリング（子がなくても表示対象になる）
   const filteredParents = parentTasks.filter((p) => {
     const children = store.getChildTasks(p.id);
-    const relevantChildren = children.filter((c) => {
-      if (filter === "mine" && c.assignee !== user.id) return false;
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+    if (children.length > 0) {
+      // 子タスクがある場合: 子に該当するものがあれば表示
+      const relevantChildren = children.filter((c) => {
+        if (filter === "mine" && c.assignee !== user.id) return false;
+        if (statusFilter !== "all" && c.status !== statusFilter) return false;
+        return true;
+      });
+      // 親自身もフィルター対象に含める（子がなくても親のステータスで判定）
+      const parentMatches =
+        (filter !== "mine" || p.assignee === user.id) &&
+        (statusFilter === "all" || p.status === statusFilter);
+      return relevantChildren.length > 0 || parentMatches;
+    } else {
+      // 子タスクがない独立タスク: 親自身のステータス・担当者で判定
+      if (filter === "mine" && p.assignee !== user.id) return false;
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
       return true;
-    });
-    // Show parent if it has relevant children, or if filter is "all" and no status filter
-    if (filter === "all" && statusFilter === "all") return true;
-    return relevantChildren.length > 0;
+    }
   });
 
   function toggleExpanded(parentId: string) {
@@ -78,8 +88,10 @@ export function TasksTab() {
     });
   }
 
-  // Count all leaf tasks (children only)
-  const allChildren = store.tasks.filter((t) => t.parentId);
+  // Count all tasks for summary (親子リレーションの有無によらず全タスクを対象とする)
+  // ただし、親タスクが子を持つ場合は子のみカウント（親は集計から除外してダブルカウントを防ぐ）
+  const parentIds = new Set(parentTasks.filter((p) => store.getChildTasks(p.id).length > 0).map((p) => p.id));
+  const allChildren = store.tasks.filter((t) => !parentIds.has(t.id));
 
   return (
     <div className="space-y-6">
@@ -103,7 +115,6 @@ export function TasksTab() {
             <option value="todo">未着手</option>
             <option value="in-progress">進行中</option>
             <option value="done">完了</option>
-            <option value="blocked">ブロック</option>
           </select>
           <button
             onClick={() => setShowAddParent(true)}
@@ -115,8 +126,8 @@ export function TasksTab() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-3">
-        {(["todo", "in-progress", "done", "blocked"] as const).map((s) => {
+      <div className="grid grid-cols-3 gap-3">
+        {(["todo", "in-progress", "done"] as const).map((s) => {
           const config = statusConfig[s];
           const count = allChildren.filter((t) => t.status === s).length;
           return (
@@ -147,6 +158,7 @@ export function TasksTab() {
       {/* Hierarchical Task List */}
       {filteredParents.map((parent) => {
         const children = store.getChildTasks(parent.id);
+        const isFlat = children.length === 0; // 子タスクなし = 独立タスク
         const filteredChildren = children.filter((c) => {
           if (filter === "mine" && c.assignee !== user.id) return false;
           if (statusFilter !== "all" && c.status !== statusFilter) return false;
@@ -157,6 +169,67 @@ export function TasksTab() {
         const isExpanded = expandedParents.has(parent.id);
         const parentStatus = statusConfig[parent.status];
         const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+        const assignee = getMemberById(parent.assignee);
+
+        // 独立タスク（子なし）はシンプルな1行表示
+        if (isFlat) {
+          if (editingId === parent.id) {
+            return (
+              <EditTaskRow
+                key={parent.id}
+                task={parent}
+                onSave={(updates) => { store.updateTask(parent.id, updates); setEditingId(null); }}
+                onCancel={() => setEditingId(null)}
+                onDelete={() => { store.deleteTask(parent.id); setEditingId(null); }}
+              />
+            );
+          }
+          return (
+            <div
+              key={parent.id}
+              className={`bg-white rounded-2xl border border-stone-200 px-5 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors group ${
+                parent.status === "done" ? "opacity-60" : ""
+              }`}
+            >
+              <button
+                onClick={() => store.toggleTaskStatus(parent.id)}
+                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                  parent.status === "done"
+                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    : parent.status === "in-progress"
+                    ? "border-orange-400 bg-orange-50"
+                    : "border-stone-300 hover:border-orange-400"
+                }`}
+                title="ステータスを切り替え"
+              >
+                {parent.status === "done" && (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {parent.status === "in-progress" && <div className="w-2 h-2 rounded-full bg-orange-400" />}
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className={`text-sm font-medium ${parent.status === "done" ? "line-through text-stone-400" : "text-stone-800"}`}>
+                  {parent.title}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${parentStatus.bg} ${parentStatus.text}`}>{parentStatus.label}</span>
+                  {parent.startDate && parent.dueDate && (
+                    <span className="text-xs text-stone-400">{parent.startDate.slice(5)} ~ {parent.dueDate.slice(5)}</span>
+                  )}
+                </div>
+              </div>
+              {assignee && <span className="text-lg" title={assignee.name}>{assignee.avatar}</span>}
+              <button
+                onClick={() => setEditingId(parent.id)}
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all"
+              >
+                編集
+              </button>
+            </div>
+          );
+        }
 
         return (
           <div key={parent.id} className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
@@ -233,13 +306,11 @@ export function TasksTab() {
                       <div className="w-4" /> {/* indent */}
                       <button
                         onClick={() => store.toggleTaskStatus(t.id)}
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                           t.status === "done"
                             ? "bg-emerald-500 border-emerald-500 text-white"
                             : t.status === "in-progress"
                             ? "border-orange-400 bg-orange-50"
-                            : t.status === "blocked"
-                            ? "border-rose-400 bg-rose-50"
                             : "border-stone-300 hover:border-orange-400"
                         }`}
                         title="ステータスを切り替え"
@@ -250,7 +321,6 @@ export function TasksTab() {
                           </svg>
                         )}
                         {t.status === "in-progress" && <div className="w-2 h-2 rounded-full bg-orange-400" />}
-                        {t.status === "blocked" && <span className="text-rose-500 text-xs font-bold">!</span>}
                       </button>
 
                       <div className="flex-1 min-w-0">
@@ -278,7 +348,7 @@ export function TasksTab() {
                       {assignee && <span className="text-lg" title={assignee.name}>{assignee.avatar}</span>}
                       <button
                         onClick={() => setEditingId(t.id)}
-                        className="opacity-0 group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded-lg hover:bg-stone-100 transition-all"
                       >
                         編集
                       </button>
@@ -468,7 +538,6 @@ function EditTaskRow({ task, onSave, onCancel, onDelete }: {
             <option value="todo">未着手</option>
             <option value="in-progress">進行中</option>
             <option value="done">完了</option>
-            <option value="blocked">ブロック</option>
           </select>
           <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)}
             className="flex-1 px-2 py-1.5 border border-stone-200 rounded-lg text-xs bg-white">

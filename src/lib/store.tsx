@@ -35,7 +35,6 @@ type Store = StoreState & StoreActions;
 function deriveParentStatus(children: Task[]): Task["status"] {
   if (children.length === 0) return "todo";
   if (children.every((c) => c.status === "done")) return "done";
-  if (children.some((c) => c.status === "blocked")) return "in-progress";
   if (children.some((c) => c.status === "in-progress" || c.status === "done")) return "in-progress";
   return "todo";
 }
@@ -168,7 +167,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       setTasks((prev) => {
         const target = prev.find((t) => t.id === id);
-        if (!target || !target.parentId) return prev;
+        if (!target) return prev;
+        // parentId なし（独立タスク）でもトグル可能
         const nextStatus: Task["status"] =
           target.status === "done"
             ? "todo"
@@ -183,11 +183,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: nextStatus }),
-        }).catch((e) => {
-          console.error("Failed to toggle task:", e);
-          setTasksError("タスクの更新に失敗しました。再読み込みしてください");
-          fetchFromAPI();
-        });
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}`);
+            }
+          })
+          .catch((e) => {
+            console.error("Failed to toggle task:", e);
+            setTasksError("タスクの更新に失敗しました。再読み込みしてください");
+            fetchFromAPI();
+          });
 
         return recalcParents(
           prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))

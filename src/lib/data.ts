@@ -13,7 +13,7 @@ export interface Member {
 export interface Task {
   id: string;
   title: string;
-  status: "done" | "in-progress" | "todo" | "blocked";
+  status: "done" | "in-progress" | "todo";
   priority: "high" | "medium" | "low";
   assignee: string;
   startDate?: string; // YYYY-MM-DD
