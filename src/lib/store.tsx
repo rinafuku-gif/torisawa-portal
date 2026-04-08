@@ -68,7 +68,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTasksLoading(true);
     setTasksError(null);
     try {
-      const res = await fetch("/api/tasks?seed=true");
+      const res = await fetch("/api/tasks");
       if (res.status === 401 && retry < 2) {
         // Cookie may not be set yet, retry after delay
         await new Promise((r) => setTimeout(r, 500));

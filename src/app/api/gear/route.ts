@@ -8,7 +8,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(items);
   } catch (e) {
     console.error("GET /api/gear error:", e);
-    return NextResponse.json({ error: "Notionからギアデータを取得できませんでした" }, { status: 500 });
+    const message = e instanceof Error && e.message.includes("object_not_found")
+      ? "ギアDBがNotionインテグレーションと共有されていません。Notionの設定を確認してください"
+      : "Notionからギアデータを取得できませんでした";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

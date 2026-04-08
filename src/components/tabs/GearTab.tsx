@@ -23,7 +23,7 @@ export function GearTab() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/gear?seed=true");
+      const res = await fetch("/api/gear");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "取得に失敗しました");
