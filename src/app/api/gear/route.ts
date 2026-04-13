@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(item, { status: 201 });
   } catch (e) {
     console.error("POST /api/gear error:", e);
-    const detail = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: "ギアアイテムの作成に失敗しました", detail }, { status: 500 });
+    return NextResponse.json({ error: "ギアアイテムの作成に失敗しました" }, { status: 500 });
   }
 }

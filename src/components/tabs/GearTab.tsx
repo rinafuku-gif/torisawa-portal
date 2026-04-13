@@ -84,12 +84,15 @@ export function GearTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
       });
-      if (!res.ok) throw new Error("作成に失敗");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "作成に失敗しました");
+      }
       const created: GearItem = await res.json();
       setItems((prev) => [...prev, created]);
     } catch (e) {
       console.error("Failed to add gear:", e);
-      setError("追加に失敗しました");
+      setError(e instanceof Error ? e.message : "追加に失敗しました");
     }
   }
 

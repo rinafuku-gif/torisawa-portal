@@ -3,9 +3,9 @@ import type { GearItem } from "./gear-types";
 import { defaultTasks } from "./data";
 import { defaultGearItems } from "./gear-types";
 
-const TASKS_DB = process.env.NOTION_TASKS_DB_ID!;
-const GEAR_DB = process.env.NOTION_GEAR_DB_ID!;
-const NOTION_API_KEY = process.env.NOTION_API_KEY!;
+const TASKS_DB = process.env.NOTION_TASKS_DB_ID!.trim();
+const GEAR_DB = process.env.NOTION_GEAR_DB_ID!.trim();
+const NOTION_API_KEY = process.env.NOTION_API_KEY!.trim();
 const NOTION_VERSION = "2022-06-28";
 
 // ─── Status / Priority / Assignee Mappings ───
