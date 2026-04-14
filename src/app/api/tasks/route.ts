@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchTasks, createTask, seedTasksIfEmpty } from "@/lib/notion";
+import { requireAuth } from "@/lib/require-auth";
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const seed = req.nextUrl.searchParams.get("seed") === "true";
     const tasks = seed ? await seedTasksIfEmpty() : await fetchTasks();
@@ -16,6 +20,9 @@ const VALID_STATUSES = ["todo", "in-progress", "done", "blocked"];
 const VALID_PRIORITIES = ["high", "medium", "low"];
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const body = await req.json();
 

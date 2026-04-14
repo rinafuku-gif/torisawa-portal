@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put, list, del } from "@vercel/blob";
+import { requireAuth } from "@/lib/require-auth";
 
 const META_KEY = "photos/meta.json";
 
@@ -41,6 +42,9 @@ async function saveMetadata(photos: PhotoMeta[]): Promise<void> {
 }
 
 export async function GET() {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const photos = await getMetadata();
     return NextResponse.json(photos);
@@ -54,6 +58,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -107,6 +114,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const { id } = await req.json();
     if (!id || typeof id !== "string") {

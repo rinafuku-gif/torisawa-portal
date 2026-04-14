@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchGear, createGearItem, seedGearIfEmpty } from "@/lib/notion";
+import { requireAuth } from "@/lib/require-auth";
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const seed = req.nextUrl.searchParams.get("seed") === "true";
     const items = seed ? await seedGearIfEmpty() : await fetchGear();
@@ -19,6 +23,9 @@ const VALID_STATUSES = ["選定中", "未発注", "発注済", "到着済", "設
 const VALID_PRIORITIES = ["必須", "推奨", "あれば◎", "検討中"];
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAuth();
+  if (error) return error;
+
   try {
     const body = await req.json();
 
